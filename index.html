@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trailkeeper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1710;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --surface: #ffffff;
+    --moss: #4a5e3a;
+    --fern: #567a3f;
+    --bark: #7a5c3e;
+    --stone: #5a574f;
+    --mist: #968f83;
+    --amber: #c4893a;
+    --shadow-moss: rgba(74,94,58,0.09);
+    --bg-moss-subtle: rgba(74,94,58,0.06);
+    --bg-bark-subtle: rgba(122,92,62,0.05);
+    --soft-success-bg: #e8f0ea;
+    --soft-warn-bg: #eef3e8;
+    --soft-danger-bg: #f8e9e9;
+    --status-done-border: #9ecfaa;
+    --status-planned-border: #b8d4a0;
+    --card-border-print: #b8b2a8;
+    --modal-backdrop: rgba(26,23,16,0.52);
+    --danger: #b94040;
+    --success: #3a6b4a;
+    --warn: #b97a20;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 14px;
+    --space-lg: 24px;
+    --space-xl: 48px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  html { scroll-behavior: smooth; }
+  body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 70% 20%, var(--bg-moss-subtle) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 20% 80%, var(--bg-bark-subtle) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { max-width: 780px; margin: 0 auto; padding: 60px 48px 100px; position: relative; z-index: 1; }
+
+  @keyframes settle { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes rise   { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ── HEADER ── */
+  .page-header { margin-bottom: 52px; border-bottom: 1.5px solid var(--mist); padding-bottom: 36px; }
+  .page-icon { display: block; margin-bottom: 16px; animation: settle 0.6s ease both; }
+  .page-icon svg { width: 48px; height: 48px; }
+  .page-title { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; color: var(--ink); animation: settle 0.6s 0.08s ease both; }
+  .page-title span { color: var(--fern); font-style: italic; }
+
+  /* ── CALLOUT ── */
+  .callout { background: var(--cream); border-left: 3px solid var(--amber); border-radius: 8px; padding: 16px 20px; margin-bottom: 44px; font-size: 13.5px; color: var(--bark); font-family: 'DM Mono', monospace; line-height: 1.6; animation: settle 0.6s 0.15s ease both; }
+  .callout-meta { margin-top: 8px; font-size: 11px; letter-spacing: 0.02em; color: var(--stone); }
+  .callout-meta kbd { font-family: 'DM Mono', monospace; font-size: 10px; border: 1px solid var(--mist); border-radius: 4px; padding: 1px 5px; background: var(--surface); color: var(--ink); }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 40px; animation: rise 0.5s ease both; scroll-margin-top: 88px; }
+  .section-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--stone); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--mist); }
+  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 1px solid var(--mist); border-radius: var(--radius-md); padding: 20px 22px; transition: border-color 0.2s, box-shadow 0.2s; }
+  .card:hover { border-color: var(--fern); box-shadow: 0 2px 12px var(--shadow-moss); }
+
+  /* ── FIELDS ── */
+  .field-grid { display: grid; }
+  .field { display: grid; grid-template-columns: 130px 1fr; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--cream); }
+  .field:last-child { border-bottom: none; }
+  .field-key { font-family: 'DM Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--stone); letter-spacing: 0.02em; padding-top: 6px; }
+  .field-editable { font-size: 14px; color: var(--ink); font-weight: 300; line-height: 1.5; border: none; outline: none; background: transparent; width: 100%; font-family: 'DM Sans', sans-serif; padding: 4px 6px; border-radius: 4px; transition: background 0.15s; min-height: 32px; }
+  .field-editable:focus { background: var(--cream); }
+  .field-editable:empty::before { content: attr(data-placeholder); color: var(--mist); font-style: italic; pointer-events: none; }
+
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; padding: 9px 14px; border-radius: var(--radius-sm); border: 1.5px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; min-height: 44px; text-transform: uppercase; }
+  .btn-primary { background: var(--moss); color: white; border-color: var(--moss); }
+  .btn-primary:hover { background: var(--fern); border-color: var(--fern); }
+  .btn-ghost { background: transparent; color: var(--stone); border-color: var(--mist); }
+  .btn-ghost:hover { border-color: var(--stone); color: var(--ink); background: var(--cream); }
+  .btn-danger { background: transparent; color: var(--danger); border-color: transparent; font-size: 10px; padding: 4px 8px; min-height: 44px; min-width: 44px; justify-content: center; }
+  .btn-danger:hover { background: var(--soft-danger-bg); }
+  .btn-danger.is-confirming { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  .btn:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
+  .btn:active { transform: translateY(1px); }
+
+  /* ── TWO COL ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ── TRAIL LIST ── */
+  .trail-list { list-style: none; }
+  .trail-item { padding: 10px 6px; border-bottom: 1px solid var(--cream); display: flex; align-items: center; gap: 8px; font-size: 14px; transition: background 0.1s; border-radius: 5px; flex-wrap: wrap; }
+  .trail-item:last-child { border-bottom: none; }
+  .trail-item:hover { background: var(--cream); }
+  .trail-tag { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; background: var(--cream); color: var(--bark); padding: 3px 7px; border-radius: 3px; flex-shrink: 0; min-width: 58px; text-align: center; }
+  .trail-name { flex: 1; min-width: 80px; font-size: 14px; font-weight: 300; color: var(--ink); }
+  .trail-name.empty { color: var(--mist); font-style: italic; }
+  .trail-name.done { text-decoration: line-through; color: var(--stone); }
+  .trail-status { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; padding: 3px 7px; border-radius: 3px; flex-shrink: 0; cursor: pointer; border: 1px solid transparent; text-transform: uppercase; transition: all 0.15s; min-height: 44px; min-width: 44px; }
+  .trail-status.unvisited { background: var(--cream); color: var(--stone); border-color: var(--mist); }
+  .trail-status.planned   { background: var(--soft-warn-bg); color: var(--moss); border-color: var(--status-planned-border); }
+  .trail-status.done      { background: var(--soft-success-bg); color: var(--success); border-color: var(--status-done-border); }
+  .trail-set-today { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; color: var(--fern); cursor: pointer; padding: 8px 10px; border-radius: 4px; border: 1px solid var(--fern); background: transparent; flex-shrink: 0; transition: all 0.15s; min-height: 44px; min-width: 44px; }
+  .trail-set-today:hover { background: var(--fern); color: white; }
+  .trail-delete { background: none; border: none; cursor: pointer; color: var(--mist); font-size: 14px; padding: 4px; border-radius: 3px; flex-shrink: 0; transition: color 0.15s, background 0.15s; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .trail-delete.is-confirming { color: var(--surface); background: var(--danger); }
+  .trail-delete:hover { color: var(--danger); }
+  .trail-set-today:focus-visible, .trail-status:focus-visible, .trail-delete:focus-visible,
+  .trip-notes-toggle:focus-visible, .check-item.custom .check-delete:focus-visible,
+  .back-to-top:focus-visible, .section-nav a:focus-visible {
+    outline: 2px solid var(--fern);
+    outline-offset: 2px;
+  }
+  .trail-set-today:active, .trail-status:active, .trail-delete:active, .trip-notes-toggle:active,
+  .check-item.custom .check-delete:active, .back-to-top:active, .section-nav a:active {
+    transform: translateY(1px);
+  }
+  .trail-add-row { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--cream); align-items: center; flex-wrap: wrap; }
+  .trail-add-input, .trail-add-select { font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 300; padding: 8px 12px; border: 1px solid var(--mist); border-radius: 6px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; min-height: 44px; }
+  .trail-add-input { flex: 1; min-width: 120px; }
+  .trail-add-input::placeholder { color: var(--mist); font-style: italic; }
+  .trail-add-input:focus, .trail-add-select:focus { border-color: var(--fern); }
+  .trail-add-select { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--stone); cursor: pointer; }
+
+  /* ── CHECKLIST ── */
+  .checklist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .checklist-progress { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--stone); }
+  .checklist { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 12px; }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 12px 10px; border-radius: 6px; font-size: 13.5px; font-weight: 300; cursor: pointer; transition: background 0.15s; user-select: none; min-height: 44px; }
+  .check-item:hover { background: var(--cream); }
+  .check-item input[type="checkbox"] { appearance: none; width: 44px; height: 44px; border: 1.5px solid var(--mist); border-radius: 8px; flex-shrink: 0; cursor: pointer; position: relative; transition: all 0.15s; background: var(--surface); }
+  .check-item input[type="checkbox"]:checked { background: var(--moss); border-color: var(--moss); }
+  .check-item input[type="checkbox"]:checked::after { content: ''; position: absolute; left: 16px; top: 10px; width: 10px; height: 18px; border: 3px solid white; border-top: none; border-left: none; transform: rotate(45deg); }
+  .check-item input[type="checkbox"]:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
+  .check-item.checked-label { color: var(--stone); text-decoration: line-through; }
+  .check-item.custom .check-delete { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--mist); font-size: 13px; padding: 2px 4px; border-radius: 3px; transition: color 0.15s; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .check-item.custom .check-delete:hover { color: var(--danger); }
+  .checklist-add { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--cream); }
+  .checklist-add-input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 300; padding: 9px 12px; border: 1px solid var(--mist); border-radius: 6px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; min-height: 44px; }
+  .checklist-add-input:focus { border-color: var(--fern); }
+  .checklist-add-input::placeholder { color: var(--mist); font-style: italic; }
+
+  /* ── CONDITIONS ── */
+  .conditions-sublabel { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--stone); margin-bottom: 8px; }
+  .conditions-heading { font-family: 'DM Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--stone); display: block; margin-bottom: 6px; }
+  .conditions-textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 300; color: var(--ink); border: none; outline: none; background: transparent; resize: none; line-height: 1.6; min-height: 60px; transition: background 0.15s; padding: 4px; border-radius: 3px; }
+  .conditions-textarea:focus { background: var(--cream); }
+  .conditions-textarea::placeholder { color: var(--mist); font-style: italic; }
+
+  /* ── WEATHER ── */
+  .weather-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+  .weather-input { flex: 1; min-width: 120px; font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 12px; border: 1px solid var(--mist); border-radius: 6px; background: var(--paper); outline: none; transition: border-color 0.15s; min-height: 44px; color: var(--ink); }
+  .weather-input:focus { border-color: var(--fern); }
+  .weather-result { margin-top: 12px; padding: 12px 14px; background: var(--cream); border-radius: 8px; font-size: 13px; line-height: 1.7; display: none; }
+  .weather-result.visible { display: block; animation: fadeIn 0.3s ease; }
+  .weather-go   { color: var(--success); font-weight: 600; }
+  .weather-warn { color: var(--warn); font-weight: 600; }
+  .weather-no   { color: var(--danger); font-weight: 600; }
+  .weather-detail { color: var(--stone); font-family: 'DM Mono', monospace; font-size: 11.5px; margin-top: 4px; display: block; }
+
+  /* ── TRIP NOTES ── */
+  .trip-notes-toggle { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--stone); padding: 10px 0; display: flex; align-items: center; gap: 6px; transition: color 0.15s; letter-spacing: 0.06em; text-transform: uppercase; min-height: 44px; }
+  .trip-notes-toggle:hover { color: var(--fern); }
+  .trip-notes-body { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--cream); }
+  .trip-notes-body.open { display: block; animation: slideUp 0.2s ease; }
+  .trip-notes-textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 300; color: var(--ink); border: none; outline: none; background: transparent; resize: none; line-height: 1.7; min-height: 80px; padding: 4px; border-radius: 3px; transition: background 0.15s; }
+  .trip-notes-textarea:focus { background: var(--cream); }
+  .trip-notes-textarea::placeholder { color: var(--mist); font-style: italic; }
+
+  /* ── LOG ── */
+  .log-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--cream); border-radius: 8px; padding: 12px 14px; text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--moss); display: block; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--stone); margin-top: 2px; display: block; }
+  .log-entries { list-style: none; }
+  .log-entry { padding: 12px 6px; border-bottom: 1px solid var(--cream); display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .log-entry-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--stone); margin-top: 3px; }
+  .log-entry-note { font-size: 13px; font-weight: 300; color: var(--stone); margin-top: 4px; font-style: italic; }
+  .log-empty { color: var(--mist); font-style: italic; font-size: 13.5px; padding: 12px 0; text-align: center; }
+
+  /* ── MODAL ── */
+  .modal-backdrop { position: fixed; inset: 0; background: var(--modal-backdrop); z-index: 100; display: none; align-items: center; justify-content: center; padding: 24px; }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.18); animation: slideUp 0.25s ease; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 24px; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--stone); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .modal-input, .modal-textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 14px; border: 1.5px solid var(--mist); border-radius: 8px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; min-height: 44px; }
+  .modal-input:focus, .modal-textarea:focus { border-color: var(--fern); }
+  .modal-textarea { min-height: 80px; resize: none; line-height: 1.6; }
+  .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+  .modal-rating { display: flex; gap: 4px; }
+  .rating-star { font-size: 22px; cursor: pointer; color: var(--mist); background: none; border: none; padding: 4px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: color 0.1s, transform 0.1s; }
+  .rating-star:hover, .rating-star.active { color: var(--amber); transform: scale(1.2); }
+
+  /* ── LINKS ── */
+  .links-list { list-style: none; display: grid; gap: 2px; }
+  .link-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 7px; transition: background 0.15s; min-height: 44px; }
+  .link-item:hover { background: var(--cream); }
+  .link-icon { width: 22px; text-align: center; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .link-icon svg { width: 15px; height: 15px; }
+  .link-label { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--stone); min-width: 100px; }
+  .link-editable { flex: 1; font-size: 13px; border: none; outline: none; background: transparent; font-family: 'DM Sans', sans-serif; color: var(--fern); padding: 2px 4px; border-radius: 3px; transition: background 0.15s; min-height: 28px; word-break: break-all; overflow-wrap: anywhere; }
+  .link-editable:focus { background: var(--cream); }
+  .link-editable:empty::before { content: attr(data-placeholder); color: var(--mist); font-style: italic; }
+
+  /* ── PHOTOS ── */
+  .photo-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .photo-slot { aspect-ratio: 4/3; background: var(--cream); border: 1.5px dashed var(--mist); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: border-color 0.2s, background 0.2s; overflow: hidden; position: relative; }
+  .photo-slot:hover { border-color: var(--fern); background: var(--surface); }
+  .photo-slot input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 7px; }
+  .photo-slot-content { display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+  .photo-slot-icon { opacity: 0.35; }
+  .photo-slot-icon svg { width: 24px; height: 24px; }
+  .photo-slot-text { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--stone); letter-spacing: 0.1em; text-transform: uppercase; }
+  .photo-remove { position: absolute; top: 6px; right: 6px; background: rgba(26,23,16,0.6); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 2; transition: background 0.15s; }
+  .photo-slot.has-photo .photo-remove { display: flex; }
+  .photo-slot.has-photo .photo-slot-content { display: none; }
+  .photo-slot.has-photo input[type="file"] { display: none; }
+  .photo-remove:hover { background: rgba(185,64,64,0.9); }
+
+  /* ── TOAST ── */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--ink); color: white; padding: 10px 12px; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.04em; animation: slideUp 0.25s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .toast-msg { flex: 1; }
+  .toast-undo { border: 1px solid rgba(255,255,255,0.36); background: transparent; color: white; border-radius: 999px; min-height: 30px; padding: 4px 10px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+  .toast-undo:hover, .toast-undo:focus-visible { border-color: white; outline: none; }
+  .toast-undo:active { transform: translateY(1px); }
+  .toast.success { background: var(--moss); }
+
+  .section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    padding: var(--space-sm) 0 var(--space-md);
+    margin-bottom: var(--space-lg);
+    background: linear-gradient(to bottom, var(--paper) 85%, transparent);
+  }
+  .section-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--mist);
+    border-radius: 999px;
+    padding: 10px 12px;
+    min-height: 44px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    text-decoration: none;
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .section-nav a:hover,
+  .section-nav a:focus-visible {
+    border-color: var(--fern);
+    color: var(--fern);
+    outline: none;
+  }
+  .section-nav a.is-active {
+    border-color: var(--fern);
+    color: var(--fern);
+    background: var(--cream);
+  }
+
+  .full-width { width: 100%; }
+  .field-text {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.5;
+    padding: var(--space-xs) 6px;
+  }
+  .section-divider {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--cream);
+  }
+  .trail-empty {
+    color: var(--mist);
+    font-style: italic;
+    font-size: 13.5px;
+    padding: 12px 6px;
+  }
+  .log-stars {
+    color: var(--amber);
+    letter-spacing: 1px;
+    font-size: 12px;
+  }
+  .weather-danger { color: var(--danger); }
+  .weather-loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* ── OVERFLOW AFFORDANCES ── */
+  .scroll-fade {
+    position: relative;
+  }
+  .scroll-fade::before,
+  .scroll-fade::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .scroll-fade::before {
+    left: 0;
+    background: linear-gradient(to right, var(--paper), transparent);
+  }
+  .scroll-fade::after {
+    right: 0;
+    background: linear-gradient(to left, var(--paper), transparent);
+  }
+  .scroll-fade.can-scroll-left::before { opacity: 1; }
+  .scroll-fade.can-scroll-right::after { opacity: 1; }
+
+  /* ── EMPTY STATES ── */
+  .empty-state {
+    text-align: center;
+    padding: 28px 16px;
+  }
+  .empty-state-icon {
+    font-size: 28px;
+    opacity: 0.3;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .empty-state-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 6px;
+  }
+  .empty-state-hint {
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--mist);
+    line-height: 1.5;
+  }
+  .empty-state-hint kbd {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    border: 1px solid var(--mist);
+    border-radius: 4px;
+    padding: 1px 5px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  /* ── COPY BUTTON ── */
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--mist);
+    border-radius: 4px;
+    color: var(--stone);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    min-height: 44px;
+    min-width: 44px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { border-color: var(--fern); color: var(--fern); }
+  .copy-btn.copied { border-color: var(--success); color: var(--success); }
+  .field-value-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .field-value-row .field-editable { flex: 1; }
+  .log-entry-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .log-entry-header .copy-btn { opacity: 0; }
+  .log-entry:hover .log-entry-header .copy-btn { opacity: 1; }
+
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .back-to-top {
+    position: fixed;
+    right: 24px;
+    bottom: 92px;
+    z-index: 180;
+    border: 1px solid var(--mist);
+    background: var(--surface);
+    color: var(--stone);
+    border-radius: 999px;
+    padding: 10px 12px;
+    min-height: 44px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .back-to-top.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    body::before, .btn, .trail-set-today, .trail-delete, .trail-add-row,
+    .checklist-add, .photo-strip, .modal-backdrop, .toast-container,
+    .weather-row, .trip-notes-toggle, .check-delete, .log-stats, .section-nav, .back-to-top { display: none !important; }
+    .page { padding: 0; max-width: 100%; }
+    .card { border: 1px solid var(--card-border-print); box-shadow: none; }
+    .section { break-inside: avoid; }
+    .trip-notes-body { display: block !important; }
+    .section-header { display: block !important; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (min-width: 1441px) {
+    .page { max-width: clamp(780px, 60vw, 1100px); }
+  }
+  @media (max-width: 1024px) {
+    .page { padding: 52px 32px 84px; }
+    .log-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .page { padding: 40px 32px 80px; }
+    .log-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 767px) {
+    .trail-add-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+      align-items: stretch;
+    }
+    .trail-add-input {
+      grid-column: 1 / -1;
+      min-width: 0;
+      width: 100%;
+    }
+    .trail-add-select,
+    .trail-add-row .btn {
+      width: 100%;
+    }
+  }
+  @media (max-width: 600px) {
+    .page { padding: 28px 18px 60px; }
+    .page-title { font-size: 30px; }
+    .two-col, .checklist, .modal-row { grid-template-columns: 1fr; }
+    .photo-strip { grid-template-columns: repeat(2, 1fr); }
+    .field { grid-template-columns: 100px 1fr; }
+    .log-stats { grid-template-columns: repeat(2, 1fr); }
+    .section-nav { margin-left: -2px; margin-right: -2px; padding-right: 2px; }
+    .toast-container { left: 12px; right: 12px; bottom: 12px; max-width: calc(100vw - 24px); }
+    .back-to-top { right: 12px; bottom: 68px; }
+  }
+  @media (max-width: 400px) {
+    .page { padding: 20px 14px 50px; }
+    .log-stats { grid-template-columns: repeat(2, 1fr); }
+    .photo-strip { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e4dc;
+      --paper: #1a1a17;
+      --cream: #2a2820;
+      --surface: #232118;
+      --moss: #7aad5e;
+      --fern: #8bc06a;
+      --bark: #cabba0;
+      --stone: #b7b19f;
+      --mist: #8e897b;
+      --amber: #d8ac62;
+      --shadow-moss: rgba(0,0,0,0.38);
+      --bg-moss-subtle: rgba(122,173,94,0.08);
+      --bg-bark-subtle: rgba(202,187,160,0.04);
+      --soft-success-bg: rgba(58,107,74,0.24);
+      --soft-warn-bg: rgba(185,122,32,0.2);
+      --soft-danger-bg: rgba(185,64,64,0.24);
+      --status-done-border: rgba(138,197,155,0.7);
+      --status-planned-border: rgba(208,185,126,0.7);
+      --card-border-print: #646055;
+      --modal-backdrop: rgba(0,0,0,0.62);
+      --danger: #d16e6e;
+      --success: #89cf9b;
+      --warn: #e1b264;
+    }
+    .toast { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer" role="status" aria-live="assertive"></div>
+
+<!-- LOG MODAL -->
+<div class="modal-backdrop" id="logModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">Log a Hike</h2>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label" for="logTrail">Trail name *</label>
+        <input class="modal-input" id="logTrail" type="text" placeholder="e.g. Appalachian Gap">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="logDate">Date</label>
+        <input class="modal-input" id="logDate" type="date">
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label" for="logMiles">Miles</label>
+        <input class="modal-input" id="logMiles" type="number" placeholder="5.2" step="0.1" min="0">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="logElevation">Elevation (ft)</label>
+        <input class="modal-input" id="logElevation" type="number" placeholder="1200" min="0">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Difficulty</label>
+      <div class="modal-rating" id="ratingStars" role="group" aria-label="Difficulty 1-5">
+        <button class="rating-star" data-val="1" aria-label="1 star">★</button>
+        <button class="rating-star" data-val="2" aria-label="2 stars">★</button>
+        <button class="rating-star" data-val="3" aria-label="3 stars">★</button>
+        <button class="rating-star" data-val="4" aria-label="4 stars">★</button>
+        <button class="rating-star" data-val="5" aria-label="5 stars">★</button>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label" for="logNote">One sentence note</label>
+      <textarea class="modal-textarea" id="logNote" placeholder="Steep switchbacks but worth it for the summit view…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="logCancel">Cancel</button>
+      <button class="btn btn-primary" id="logSave">Save hike</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="top">
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <span class="page-icon" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="24" cy="43" rx="16" ry="3" fill="#ede8dc"/>
+        <path d="M8 40 L24 8 L40 40" stroke="#4a5e3a" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <path d="M4 40 L16 18 L26 32" stroke="#6b8456" stroke-width="2" fill="none" stroke-linejoin="round"/>
+        <circle cx="24" cy="8" r="3" fill="#c4893a"/>
+      </svg>
+    </span>
+    <h1 class="page-title">Trail<span>keeper</span></h1>
+  </header>
+
+  <nav class="section-nav scroll-fade" id="sectionNav" aria-label="Section navigation">
+    <a href="#sec-today">Today</a>
+    <a href="#sec-trails">Trails</a>
+    <a href="#sec-record">Record</a>
+    <a href="#sec-notes">Field Notes</a>
+    <a href="#sec-gear">Gear</a>
+    <a href="#sec-resources">Resources</a>
+    <a href="#sec-gallery">Gallery</a>
+  </nav>
+
+  <!-- CALLOUT -->
+  <div class="callout" role="note">
+    <strong>📌 Quick add:</strong> Finished a hike? Hit <strong>+ Log hike</strong> in the Record section. All data saves automatically in your browser.
+    <div class="callout-meta" aria-live="polite"><span id="saveMeta">Auto-save active</span> · Shortcuts: <kbd>/</kbd> Trails · <kbd>L</kbd> Log · <kbd>G</kbd> Gear</div>
+  </div>
+
+  <!-- TODAY'S PLAN -->
+  <section class="section" id="sec-today">
+    <div class="section-label">Today</div>
+    <div class="section-header">
+      <h2 class="section-title">Today's Plan</h2>
+      <button class="btn btn-ghost" onclick="window.print()" aria-label="Print today's plan">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print
+      </button>
+    </div>
+    <div class="card">
+      <div class="field-grid">
+        <div class="field">
+          <span class="field-key">Trail</span>
+          <div class="field-value-row">
+            <div class="field-editable" id="planTrail" contenteditable="true" role="textbox" aria-label="Trail name" data-placeholder="— add trail name" data-key="planTrail"></div>
+            <button class="copy-btn" data-copy-from="planTrail" aria-label="Copy trail name">Copy</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-key">Start time</span>
+          <div class="field-value-row">
+            <div class="field-editable" id="planTime" contenteditable="true" role="textbox" aria-label="Start time" data-placeholder="— set a time" data-key="planTime"></div>
+            <button class="copy-btn" data-copy-from="planTime" aria-label="Copy start time">Copy</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-key">Weather</span>
+          <div class="full-width">
+            <div class="weather-row">
+              <input class="weather-input" id="weatherCity" type="text" placeholder="City or zip code" aria-label="City for weather forecast">
+              <button class="btn btn-ghost" id="weatherFetch">Check</button>
+            </div>
+            <div class="weather-result" id="weatherResult" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-key">Pack list</span>
+          <span class="field-text">water · snacks · layers · headlamp · first aid</span>
+        </div>
+      </div>
+      <div class="section-divider">
+        <button class="trip-notes-toggle" id="notesToggle" aria-expanded="false" aria-controls="notesBody">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline id="notesArrow" points="9 18 15 12 9 6"/></svg>
+          Trip notes
+        </button>
+        <div class="trip-notes-body" id="notesBody">
+          <textarea class="trip-notes-textarea" id="tripNotes" placeholder="Trailhead directions, permit details, parking tips…" rows="4"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRAIL SHORT LIST -->
+  <section class="section" id="sec-trails">
+    <div class="section-label">Trails</div>
+    <h2 class="section-title">Short List</h2>
+    <div class="card">
+      <ul class="trail-list" id="trailList" aria-label="Trail shortlist"></ul>
+      <div class="trail-add-row">
+        <label class="visually-hidden" for="trailInput">New trail name</label>
+        <input class="trail-add-input" id="trailInput" type="text" placeholder="Trail name…" aria-label="New trail name">
+        <select class="trail-add-select" id="trailCategory" aria-label="Duration category">
+          <option value="Quick">Quick</option>
+          <option value="Half day">Half day</option>
+          <option value="Full day">Full day</option>
+        </select>
+        <button class="btn btn-primary" id="trailAdd">+ Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section class="section" id="sec-record">
+    <div class="section-label">Record</div>
+    <div class="section-header">
+      <h2 class="section-title">Log</h2>
+      <button class="btn btn-primary" id="openLogModal">+ Log hike</button>
+    </div>
+    <div class="log-stats">
+      <div class="stat-card"><span class="stat-num" id="statHikes">0</span><span class="stat-label">Hikes</span></div>
+      <div class="stat-card"><span class="stat-num" id="statMiles">0</span><span class="stat-label">Miles</span></div>
+      <div class="stat-card"><span class="stat-num" id="statElev">0</span><span class="stat-label">Elev ft</span></div>
+      <div class="stat-card"><span class="stat-num" id="statLongest">0</span><span class="stat-label">Longest</span></div>
+    </div>
+    <div class="card">
+      <ul class="log-entries" id="logEntries" aria-live="polite"></ul>
+    </div>
+  </section>
+
+  <!-- CONDITIONS -->
+  <section class="section" id="sec-notes">
+    <div class="section-label">Field notes</div>
+    <h2 class="section-title">Conditions &amp; Notes</h2>
+    <div class="two-col">
+      <div class="card">
+        <span class="conditions-heading">Terrain</span>
+        <div class="conditions-sublabel">Mud · Ice · Bugs</div>
+        <textarea class="conditions-textarea" id="condTerrain" placeholder="— add current conditions" rows="3"></textarea>
+      </div>
+      <div class="card">
+        <span class="conditions-heading">Access</span>
+        <div class="conditions-sublabel">Parking · Permits · Closures</div>
+        <textarea class="conditions-textarea" id="condAccess" placeholder="— add access notes" rows="3"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- GEAR CHECKLIST -->
+  <section class="section" id="sec-gear">
+    <div class="section-label">Gear</div>
+    <h2 class="section-title">Pack Checklist</h2>
+    <div class="card">
+      <div class="checklist-header">
+        <span class="checklist-progress" id="checkProgress" aria-live="polite">0 / 8 packed</span>
+        <button class="btn btn-ghost" id="checkReset">Reset</button>
+      </div>
+      <ul class="checklist" id="checklist" aria-label="Gear checklist">
+        <li class="check-item"><input type="checkbox" aria-label="Shoes and socks"> Shoes &amp; socks</li>
+        <li class="check-item"><input type="checkbox" aria-label="Water"> Water</li>
+        <li class="check-item"><input type="checkbox" aria-label="Snacks"> Snacks</li>
+        <li class="check-item"><input type="checkbox" aria-label="Layers"> Layers</li>
+        <li class="check-item"><input type="checkbox" aria-label="Headlamp"> Headlamp</li>
+        <li class="check-item"><input type="checkbox" aria-label="First aid"> First aid</li>
+        <li class="check-item"><input type="checkbox" aria-label="Bug spray and sunscreen"> Bug spray &amp; sunscreen</li>
+        <li class="check-item"><input type="checkbox" aria-label="Offline map"> Map (offline)</li>
+      </ul>
+      <div class="checklist-add">
+        <label class="visually-hidden" for="gearInput">Custom gear item</label>
+        <input class="checklist-add-input" id="gearInput" type="text" placeholder="Add custom gear item…">
+        <button class="btn btn-ghost" id="gearAdd">+ Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVED LINKS -->
+  <section class="section" id="sec-resources">
+    <div class="section-label">Resources</div>
+    <h2 class="section-title">Saved Links</h2>
+    <div class="card">
+      <ul class="links-list">
+        <li class="link-item">
+          <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+          <span class="link-label">AllTrails</span>
+          <div class="link-editable" contenteditable="true" role="textbox" aria-label="AllTrails link" data-placeholder="— paste link" data-key="linkAllTrails"></div>
+        </li>
+        <li class="link-item">
+          <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          <span class="link-label">Park website</span>
+          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Park website link" data-placeholder="— paste link" data-key="linkPark"></div>
+        </li>
+        <li class="link-item">
+          <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></span>
+          <span class="link-label">Weather</span>
+          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Weather link" data-placeholder="— paste link" data-key="linkWeather"></div>
+        </li>
+        <li class="link-item">
+          <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></span>
+          <span class="link-label">Offline map</span>
+          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Offline map link" data-placeholder="— paste link" data-key="linkOfflineMap"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PHOTOS -->
+  <section class="section" id="sec-gallery">
+    <div class="section-label">Gallery</div>
+    <h2 class="section-title">Photos</h2>
+    <div class="photo-strip" id="photoStrip"></div>
+  </section>
+
+</div>
+<a class="back-to-top" id="backToTop" href="#top" aria-label="Back to top">Top</a>
+
+<script>
+/* ── STORAGE ── */
+const store = {
+  get: (k, d) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : d; } catch { return d; } },
+  set: (k, v) => {
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+      window.dispatchEvent(new Event('trailkeeper:saved'));
+    } catch {}
+  }
+};
+
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function isSafeDataImage(src) {
+  if (typeof src !== 'string') return false;
+  if (src.length > 4_500_000) return false;
+  const match = src.match(/^data:image\/(png|jpe?g|webp|gif|avif);base64,([A-Za-z0-9+/=]+)$/i);
+  if (!match) return false;
+  return match[2].length % 4 === 0;
+}
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function setupTwoClickConfirm(button, onConfirm, confirmText = 'Sure?') {
+  let armed = false;
+  let resetTimer = null;
+  const defaultText = button.textContent;
+  const reset = () => {
+    armed = false;
+    button.textContent = defaultText;
+    button.classList.remove('is-confirming');
+    if (resetTimer) {
+      clearTimeout(resetTimer);
+      resetTimer = null;
+    }
+  };
+  button.addEventListener('click', e => {
+    e.preventDefault();
+    if (!armed) {
+      armed = true;
+      button.textContent = confirmText;
+      button.classList.add('is-confirming');
+      resetTimer = setTimeout(reset, 2000);
+      return;
+    }
+    reset();
+    onConfirm();
+  });
+}
+
+/* ── TOAST ── */
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  const text = document.createElement('span');
+  text.className = 'toast-msg';
+  text.textContent = msg;
+  el.appendChild(text);
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+
+function showUndoToast(msg, onUndo, timeoutMs = 5000) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  const text = document.createElement('span');
+  text.className = 'toast-msg';
+  text.textContent = msg;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'toast-undo';
+  btn.textContent = 'Undo';
+  let dismissed = false;
+  const remove = () => {
+    if (dismissed) return;
+    dismissed = true;
+    el.remove();
+  };
+  btn.addEventListener('click', () => {
+    if (dismissed) return;
+    dismissed = true;
+    try { onUndo(); } finally { el.remove(); }
+  });
+  el.append(text, btn);
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(remove, timeoutMs);
+}
+
+/* ── AUTOSAVE META ── */
+const saveMeta = document.getElementById('saveMeta');
+let saveMetaInterval = null;
+let lastSavedAt = null;
+function setSaveMeta(text) {
+  if (!saveMeta) return;
+  saveMeta.textContent = text;
+}
+function formatSavedAgo(msAgo) {
+  if (msAgo < 5000) return 'Saved just now';
+  if (msAgo < 60000) return `Saved ${Math.max(1, Math.floor(msAgo / 1000))}s ago`;
+  if (msAgo < 3600000) return `Saved ${Math.floor(msAgo / 60000)}m ago`;
+  return `Saved ${Math.floor(msAgo / 3600000)}h ago`;
+}
+function refreshSaveMeta() {
+  if (!lastSavedAt) {
+    setSaveMeta('Auto-save active');
+    return;
+  }
+  setSaveMeta(formatSavedAgo(Date.now() - lastSavedAt));
+}
+window.addEventListener('trailkeeper:saved', () => {
+  lastSavedAt = Date.now();
+  refreshSaveMeta();
+  if (!saveMetaInterval) saveMetaInterval = setInterval(refreshSaveMeta, 30000);
+});
+refreshSaveMeta();
+
+/* ── STAGGER ANIMATIONS ── */
+document.querySelectorAll('.section').forEach((el, i) => {
+  el.style.animationDelay = (0.1 + i * 0.07) + 's';
+});
+
+/* ── BACK TO TOP ── */
+const backToTop = document.getElementById('backToTop');
+const firstSection = document.getElementById('sec-today');
+const sectionNavLinks = [...document.querySelectorAll('.section-nav a')];
+const sectionById = sectionNavLinks
+  .map(link => {
+    const id = (link.getAttribute('href') || '').replace(/^#/, '');
+    return { link, section: document.getElementById(id) };
+  })
+  .filter(x => x.section);
+
+function updateActiveSectionNav() {
+  const marker = window.scrollY + 120;
+  let activeId = '';
+  for (const item of sectionById) {
+    if (item.section.offsetTop <= marker) activeId = item.section.id;
+  }
+  sectionById.forEach(item => item.link.classList.toggle('is-active', item.section.id === activeId));
+}
+
+function updateBackToTop() {
+  const threshold = firstSection ? firstSection.offsetTop + firstSection.offsetHeight : 300;
+  backToTop.classList.toggle('visible', window.scrollY > threshold);
+  updateActiveSectionNav();
+}
+window.addEventListener('scroll', updateBackToTop, { passive: true });
+updateBackToTop();
+
+/* ── CONTENTEDITABLE PERSISTENCE ── */
+document.querySelectorAll('[data-key]').forEach(el => {
+  const key = el.dataset.key;
+  const saved = store.get(key, '');
+  if (saved) el.textContent = saved;
+  el.addEventListener('input', () => store.set(key, el.textContent.trim()));
+});
+
+/* ── TRIP NOTES ── */
+const notesToggle = document.getElementById('notesToggle');
+const notesBody   = document.getElementById('notesBody');
+const tripNotes   = document.getElementById('tripNotes');
+function setNotesOpen(open) {
+  notesBody.classList.toggle('open', open);
+  notesToggle.setAttribute('aria-expanded', String(open));
+  document.getElementById('notesArrow').setAttribute('points', open ? '18 9 12 15 6 9' : '9 18 15 12 9 6');
+}
+notesToggle.addEventListener('click', () => {
+  const open = !notesBody.classList.contains('open');
+  setNotesOpen(open);
+  store.set('tripNotesOpen', open);
+});
+setNotesOpen(Boolean(store.get('tripNotesOpen', false)));
+tripNotes.value = store.get('tripNotes', '');
+tripNotes.addEventListener('input', () => store.set('tripNotes', tripNotes.value));
+
+/* ── WEATHER ── */
+const weatherBtn    = document.getElementById('weatherFetch');
+const weatherCity   = document.getElementById('weatherCity');
+const weatherResult = document.getElementById('weatherResult');
+const savedCity = store.get('weatherCity', '');
+if (savedCity) weatherCity.value = savedCity;
+weatherBtn.addEventListener('click', fetchWeather);
+weatherCity.addEventListener('keydown', e => e.key === 'Enter' && fetchWeather());
+
+async function fetchWeather() {
+  const city = weatherCity.value.trim();
+  if (!city) return;
+  store.set('weatherCity', city);
+  weatherBtn.textContent = '...';
+  weatherBtn.disabled = true;
+  weatherBtn.classList.add('weather-loading');
+  try {
+    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`).then(r => r.json());
+    if (!geo.results?.length) throw new Error('not found');
+    const { latitude, longitude, name, country_code } = geo.results[0];
+    const wx = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=1`).then(r => r.json());
+    const d = wx.daily;
+    const high = Math.round(d.temperature_2m_max[0]);
+    const low = Math.round(d.temperature_2m_min[0]);
+    const precip = d.precipitation_probability_max[0];
+    const wind = Math.round(d.windspeed_10m_max[0]);
+    let verdict, cls, icon;
+    if (precip >= 70 || wind >= 35) { verdict = 'No-go'; cls = 'weather-no'; icon = '[X]'; }
+    else if (precip >= 40 || wind >= 20) { verdict = 'Caution'; cls = 'weather-warn'; icon = '[!]'; }
+    else { verdict = 'Go'; cls = 'weather-go'; icon = '[OK]'; }
+    weatherResult.innerHTML = `<span class="${cls}">${esc(icon)} ${esc(verdict)}</span> - ${esc(name)}, ${esc((country_code || '').toUpperCase())}<span class="weather-detail">High ${esc(high)}F · Low ${esc(low)}F · Precip ${esc(precip)}% · Wind ${esc(wind)} mph</span>`;
+    weatherResult.classList.add('visible');
+  } catch {
+    weatherResult.innerHTML = `<span class="weather-danger">${esc('Location not found - try a different city name.')}</span>`;
+    weatherResult.classList.add('visible');
+  } finally {
+    weatherBtn.textContent = 'Check';
+    weatherBtn.disabled = false;
+    weatherBtn.classList.remove('weather-loading');
+  }
+}
+
+/* ── TRAIL SHORTLIST ── */
+let trails = store.get('trails', []);
+const STATUSES = ['unvisited','planned','done'];
+const SLABELS  = { unvisited:'Unvisited', planned:'Planned', done:'Done ✓' };
+
+function renderTrails() {
+  const list = document.getElementById('trailList');
+  list.innerHTML = '';
+  if (!trails.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.innerHTML = `<span class="empty-state-icon" aria-hidden="true">🥾</span>
+      <div class="empty-state-title">No trails yet</div>
+      <div class="empty-state-hint">Add your first trail below, or press <kbd>/</kbd> to jump to the input.</div>`;
+    list.appendChild(empty);
+    return;
+  }
+  let statusUpdated = false;
+  trails.forEach((t, i) => {
+    const safeStatus = STATUSES.includes(t.status) ? t.status : 'unvisited';
+    if (safeStatus !== t.status) {
+      trails[i].status = safeStatus;
+      statusUpdated = true;
+    }
+    const safeStatusLabel = esc(SLABELS[safeStatus]);
+    const li = document.createElement('li');
+    li.className = 'trail-item';
+    li.innerHTML = `
+      <span class="trail-tag">${esc(t.category)}</span>
+      <span class="trail-name${safeStatus==='done'?' done':''}">${esc(t.name)}</span>
+      <button class="trail-set-today btn" aria-label="Set as today's trail">→ Today</button>
+      <button class="trail-status ${safeStatus}" aria-label="Status: ${safeStatusLabel}">${safeStatusLabel}</button>
+      <button class="trail-delete" aria-label="Remove ${esc(t.name)}">✕</button>`;
+    li.querySelector('.trail-set-today').addEventListener('click', () => {
+      const el = document.getElementById('planTrail');
+      el.textContent = t.name;
+      store.set('planTrail', t.name);
+      toast(`"${t.name}" set as today's trail`, 'success');
+    });
+    li.querySelector('.trail-status').addEventListener('click', () => {
+      trails[i].status = STATUSES[(STATUSES.indexOf(safeStatus) + 1) % STATUSES.length];
+      store.set('trails', trails);
+      renderTrails();
+    });
+    setupTwoClickConfirm(li.querySelector('.trail-delete'), () => {
+      const prevTrails = deepClone(trails);
+      const removedName = t.name;
+      trails.splice(i, 1);
+      store.set('trails', trails);
+      renderTrails();
+      toast('Trail removed');
+      showUndoToast(`Removed "${removedName}"`, () => {
+        trails = prevTrails;
+        store.set('trails', trails);
+        renderTrails();
+        toast('Trail restored', 'success');
+      });
+    });
+    list.appendChild(li);
+  });
+  if (statusUpdated) store.set('trails', trails);
+}
+
+document.getElementById('trailAdd').addEventListener('click', addTrail);
+document.getElementById('trailInput').addEventListener('keydown', e => e.key==='Enter' && addTrail());
+function addTrail() {
+  const name = document.getElementById('trailInput').value.trim();
+  if (!name) return;
+  trails.push({ name, category: document.getElementById('trailCategory').value, status: 'unvisited' });
+  store.set('trails', trails);
+  document.getElementById('trailInput').value = '';
+  renderTrails();
+  toast(`"${name}" added`, 'success');
+}
+renderTrails();
+
+/* ── HIKE LOG ── */
+let hikeLog = store.get('hikeLog', []);
+let selectedRating = 0;
+
+function renderLog() {
+  const entries = document.getElementById('logEntries');
+  entries.innerHTML = '';
+  if (!hikeLog.length) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.innerHTML = `<span class="empty-state-icon" aria-hidden="true">📋</span>
+      <div class="empty-state-title">No hikes logged</div>
+      <div class="empty-state-hint">Press <kbd>L</kbd> or hit <strong>+ Log hike</strong> above to record your first outing.</div>`;
+    entries.appendChild(empty);
+  } else {
+    [...hikeLog].reverse().forEach((h, ri) => {
+      const i = hikeLog.length - 1 - ri;
+      const li = document.createElement('li');
+      li.className = 'log-entry';
+      const safeRating = Number.isFinite(Number(h.rating)) ? Math.min(5, Math.max(0, Math.round(Number(h.rating)))) : 0;
+      const stars = safeRating ? `<span class="log-stars">${'★'.repeat(safeRating)}${'☆'.repeat(5 - safeRating)}</span>` : '';
+      const milesText = h.miles ? ` · ${esc(h.miles)} mi` : '';
+      const elevationValue = h.elevation ? Number(h.elevation) : NaN;
+      const elevationText = h.elevation
+        ? ` · ${Number.isFinite(elevationValue) ? esc(elevationValue.toLocaleString()) : esc(h.elevation)} ft`
+        : '';
+      li.innerHTML = `
+        <div>
+          <div class="log-entry-header"><span class="log-entry-name">${esc(h.trail)}</span><button class="copy-btn" aria-label="Copy trail name">Copy</button></div>
+          <div class="log-entry-meta">${esc(h.date || '')}${milesText}${elevationText}${safeRating ? ' · ' + stars : ''}</div>
+          ${h.note ? `<div class="log-entry-note">${esc(h.note)}</div>` : ''}
+        </div>
+        <button class="btn btn-danger" aria-label="Delete entry">✕</button>`;
+      setupTwoClickConfirm(li.querySelector('.btn-danger'), () => {
+        const prevLog = deepClone(hikeLog);
+        const removedTrailName = h.trail;
+        hikeLog.splice(i, 1);
+        store.set('hikeLog', hikeLog);
+        renderLog();
+        toast('Entry removed');
+        showUndoToast(`Removed "${removedTrailName}" log`, () => {
+          hikeLog = prevLog;
+          store.set('hikeLog', hikeLog);
+          renderLog();
+          toast('Entry restored', 'success');
+        });
+      });
+      const logCopyBtn = li.querySelector('.copy-btn');
+      if (logCopyBtn) logCopyBtn.addEventListener('click', () => copyText(h.trail, logCopyBtn));
+      entries.appendChild(li);
+    });
+  }
+  const miles = hikeLog.reduce((s, h) => s + (parseFloat(h.miles) || 0), 0);
+  const elev = hikeLog.reduce((s, h) => s + (parseInt(h.elevation) || 0), 0);
+  const longest = hikeLog.reduce((m, h) => Math.max(m, parseFloat(h.miles) || 0), 0);
+  document.getElementById('statHikes').textContent = hikeLog.length;
+  document.getElementById('statMiles').textContent = miles.toFixed(1);
+  document.getElementById('statElev').textContent = elev >= 1000 ? (elev / 1000).toFixed(1) + 'k' : elev;
+  document.getElementById('statLongest').textContent = longest.toFixed(1);
+}
+
+let previouslyFocused = null;
+const logModal = document.getElementById('logModal');
+const pageEl = document.querySelector('.page');
+const modalCard = logModal.querySelector('.modal');
+
+function getModalFocusable() {
+  return [...modalCard.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.hasAttribute('hidden'));
+}
+
+function openModal() {
+  previouslyFocused = document.activeElement;
+  const suggestedTrail =
+    document.getElementById('planTrail').textContent.trim() ||
+    (trails.find(t => t.status === 'planned') || trails[0] || {}).name ||
+    '';
+  if (suggestedTrail) document.getElementById('logTrail').value = suggestedTrail;
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  logModal.classList.add('open');
+  pageEl.setAttribute('aria-hidden', 'true');
+  setTimeout(() => {
+    const focusable = getModalFocusable();
+    if (focusable.length) focusable[0].focus();
+  }, 50);
+}
+
+function closeModal() {
+  if (!logModal.classList.contains('open')) return;
+  logModal.classList.remove('open');
+  pageEl.removeAttribute('aria-hidden');
+  document.getElementById('logTrail').value = '';
+  document.getElementById('logNote').value = '';
+  document.getElementById('logMiles').value = '';
+  document.getElementById('logElevation').value = '';
+  selectedRating = 0;
+  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('active'));
+  if (previouslyFocused) { previouslyFocused.focus(); previouslyFocused = null; }
+}
+
+/* Focus trap inside modal */
+logModal.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('logSave').click();
+    return;
+  }
+  if (!logModal.classList.contains('open') || e.key !== 'Tab') return;
+  const focusable = getModalFocusable();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else {
+    if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
+document.getElementById('openLogModal').addEventListener('click', openModal);
+document.getElementById('logCancel').addEventListener('click', closeModal);
+logModal.addEventListener('click', e => e.target === e.currentTarget && closeModal());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && logModal.classList.contains('open')) closeModal(); });
+
+function isTypingTarget(el) {
+  if (!el) return false;
+  return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'));
+}
+
+document.addEventListener('keydown', e => {
+  if (isTypingTarget(document.activeElement) || logModal.classList.contains('open')) return;
+  const key = e.key.toLowerCase();
+  if (e.key === '/') {
+    e.preventDefault();
+    document.getElementById('trailInput').focus();
+    return;
+  }
+  if (key === 'l') {
+    e.preventDefault();
+    openModal();
+    return;
+  }
+  if (key === 'g') {
+    e.preventDefault();
+    document.getElementById('gearInput').focus();
+  }
+});
+
+document.getElementById('logSave').addEventListener('click', () => {
+  const trail = document.getElementById('logTrail').value.trim();
+  if (!trail) { document.getElementById('logTrail').focus(); return; }
+  hikeLog.push({
+    trail,
+    date: document.getElementById('logDate').value,
+    miles: document.getElementById('logMiles').value,
+    elevation: document.getElementById('logElevation').value,
+    note: document.getElementById('logNote').value.trim(),
+    rating: selectedRating
+  });
+  store.set('hikeLog', hikeLog);
+  renderLog();
+  closeModal();
+  toast(`"${trail}" logged!`, 'success');
+});
+
+document.querySelectorAll('.rating-star').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedRating = +btn.dataset.val;
+    document.querySelectorAll('.rating-star').forEach((s,i) => s.classList.toggle('active', i < selectedRating));
+  });
+});
+
+renderLog();
+
+/* ── GEAR CHECKLIST ── */
+let customGear  = store.get('customGear', []);
+let checkedGear = store.get('checkedGear', []);
+
+function updateProgress() {
+  const all  = document.querySelectorAll('#checklist .check-item input').length;
+  const done = document.querySelectorAll('#checklist .check-item input:checked').length;
+  document.getElementById('checkProgress').textContent = `${done} / ${all} packed`;
+}
+
+function syncChecklistFromState() {
+  document.querySelectorAll('#checklist .check-item').forEach(li => li.classList.remove('checked-label'));
+  document.querySelectorAll('#checklist .check-item:not(.custom)').forEach((item, i) => {
+    const cb = item.querySelector('input');
+    const checked = checkedGear.includes('default_' + i);
+    cb.checked = checked;
+    if (checked) item.classList.add('checked-label');
+  });
+  document.querySelectorAll('#checklist .check-item.custom').forEach((item, i) => {
+    const cb = item.querySelector('input');
+    const checked = checkedGear.includes('custom_' + i);
+    cb.checked = checked;
+    if (checked) item.classList.add('checked-label');
+  });
+}
+
+function renderCustomGear() {
+  document.querySelectorAll('#checklist .custom').forEach(el => el.remove());
+  customGear.forEach((label, ci) => {
+    const li = document.createElement('li');
+    li.className = 'check-item custom';
+    const key = 'custom_' + ci;
+    const checked = checkedGear.includes(key);
+    li.innerHTML = `<input type="checkbox" aria-label="${esc(label)}"${checked?' checked':''}> ${esc(label)}<button class="check-delete" aria-label="Remove ${esc(label)}">✕</button>`;
+    if (checked) li.classList.add('checked-label');
+    li.querySelector('input').addEventListener('change', e => {
+      if (e.target.checked) { if (!checkedGear.includes(key)) checkedGear.push(key); li.classList.add('checked-label'); }
+      else { checkedGear = checkedGear.filter(k => k !== key); li.classList.remove('checked-label'); }
+      store.set('checkedGear', checkedGear);
+      updateProgress();
+    });
+    li.addEventListener('click', e => {
+      if (e.target.closest('.check-delete') || e.target.tagName === 'INPUT') return;
+      li.querySelector('input').click();
+    });
+    li.querySelector('.check-delete').addEventListener('click', () => {
+      const prevCustomGear = deepClone(customGear);
+      const prevCheckedGear = deepClone(checkedGear);
+      customGear.splice(ci, 1);
+      checkedGear = checkedGear.filter(k => !k.startsWith('custom_'));
+      store.set('customGear', customGear);
+      store.set('checkedGear', checkedGear);
+      renderCustomGear();
+      syncChecklistFromState();
+      updateProgress();
+      showUndoToast(`Removed "${label}"`, () => {
+        customGear = prevCustomGear;
+        checkedGear = prevCheckedGear;
+        store.set('customGear', customGear);
+        store.set('checkedGear', checkedGear);
+        renderCustomGear();
+        syncChecklistFromState();
+        updateProgress();
+        toast('Gear restored', 'success');
+      });
+    });
+    document.getElementById('checklist').appendChild(li);
+  });
+}
+
+document.querySelectorAll('#checklist .check-item:not(.custom)').forEach((item, i) => {
+  const cb = item.querySelector('input');
+  const key = 'default_' + i;
+  if (checkedGear.includes(key)) { cb.checked = true; item.classList.add('checked-label'); }
+  cb.addEventListener('change', () => {
+    if (cb.checked) { if (!checkedGear.includes(key)) checkedGear.push(key); item.classList.add('checked-label'); }
+    else { checkedGear = checkedGear.filter(k => k !== key); item.classList.remove('checked-label'); }
+    store.set('checkedGear', checkedGear);
+    updateProgress();
+  });
+  item.addEventListener('click', e => {
+    if (e.target.tagName === 'INPUT' || e.target.closest('.check-delete')) return;
+    cb.click();
+  });
+});
+
+setupTwoClickConfirm(document.getElementById('checkReset'), () => {
+  const prevCheckedGear = deepClone(checkedGear);
+  checkedGear = [];
+  store.set('checkedGear', checkedGear);
+  syncChecklistFromState();
+  updateProgress();
+  toast('Checklist reset');
+  showUndoToast('Checklist reset', () => {
+    checkedGear = prevCheckedGear;
+    store.set('checkedGear', checkedGear);
+    syncChecklistFromState();
+    updateProgress();
+    toast('Checklist restored', 'success');
+  });
+});
+
+document.getElementById('gearAdd').addEventListener('click', addGear);
+document.getElementById('gearInput').addEventListener('keydown', e => e.key === 'Enter' && addGear());
+function addGear() {
+  const val = document.getElementById('gearInput').value.trim();
+  if (!val) return;
+  customGear.push(val);
+  store.set('customGear', customGear);
+  document.getElementById('gearInput').value = '';
+  renderCustomGear();
+  updateProgress();
+  toast(`"${val}" added`, 'success');
+}
+renderCustomGear();
+syncChecklistFromState();
+updateProgress();
+
+/* ── CONDITIONS ── */
+['condTerrain','condAccess'].forEach(id => {
+  const el = document.getElementById(id);
+  el.value = store.get(id, '');
+  el.addEventListener('input', () => store.set(id, el.value));
+});
+
+/* ── PHOTOS ── */
+const PHOTO_KEYS = ['photo0','photo1','photo2'];
+function buildPhotoSlots() {
+  const strip = document.getElementById('photoStrip');
+  strip.innerHTML = '';
+  PHOTO_KEYS.forEach((key, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot';
+    slot.setAttribute('aria-label', `Photo slot ${i+1}`);
+    const saved = store.get(key, null);
+    if (saved && !isSafeDataImage(saved)) {
+      store.set(key, null);
+    }
+    if (saved && isSafeDataImage(saved)) {
+      slot.classList.add('has-photo');
+      const img = document.createElement('img');
+      img.src = saved;
+      img.alt = `Hike photo ${i + 1}`;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'photo-remove';
+      removeBtn.setAttribute('aria-label', 'Remove photo');
+      removeBtn.textContent = '✕';
+      slot.appendChild(img);
+      slot.appendChild(removeBtn);
+      slot.querySelector('.photo-remove').addEventListener('click', e => {
+        e.stopPropagation();
+        store.set(key, null);
+        buildPhotoSlots();
+      });
+    } else {
+      slot.innerHTML = `
+        <input type="file" accept="image/*" aria-label="Upload photo ${i+1}">
+        <div class="photo-slot-content">
+          <span class="photo-slot-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </span>
+          <span class="photo-slot-text">Add photo</span>
+        </div>`;
+      slot.querySelector('input[type="file"]').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 3 * 1024 * 1024) { toast('Image too large (max 3MB)'); return; }
+        const reader = new FileReader();
+        reader.onload = ev => { store.set(key, ev.target.result); buildPhotoSlots(); toast('Photo saved', 'success'); };
+        reader.readAsDataURL(file);
+      });
+    }
+    strip.appendChild(slot);
+  });
+}
+buildPhotoSlots();
+
+/* ── OVERFLOW AFFORDANCES ── */
+function setupScrollFade(el) {
+  if (!el) return;
+  function update() {
+    el.classList.toggle('can-scroll-left', el.scrollLeft > 4);
+    el.classList.toggle('can-scroll-right', el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }
+  el.addEventListener('scroll', update, { passive: true });
+  new ResizeObserver(update).observe(el);
+  update();
+}
+setupScrollFade(document.getElementById('sectionNav'));
+
+/* ── QUICK COPY ── */
+function flashCopied(btn) {
+  const orig = btn.textContent;
+  btn.textContent = 'Copied';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1200);
+}
+
+document.querySelectorAll('.copy-btn[data-copy-from]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const src = document.getElementById(btn.dataset.copyFrom);
+    if (!src) return;
+    const text = (src.textContent || src.value || '').trim();
+    if (!text) { toast('Nothing to copy'); return; }
+    navigator.clipboard.writeText(text).then(() => {
+      flashCopied(btn);
+      toast('Copied to clipboard', 'success');
+    });
+  });
+});
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) flashCopied(btn);
+    toast('Copied to clipboard', 'success');
+  });
+}
+</script>
+</body>
+</html>
