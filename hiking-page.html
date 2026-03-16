@@ -472,6 +472,7 @@ async function fetchWeather() {
     const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`).then(r => r.json());
     if (!geo.results?.length) throw new Error('not found');
     const { latitude, longitude, name, country_code } = geo.results[0];
+    window.TK = window.TK || {}; window.TK._lastGeo = { lat: latitude, lon: longitude, name: name };
     const wx = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=1`).then(r => r.json());
     const d = wx.daily;
     const high = Math.round(d.temperature_2m_max[0]);
@@ -966,6 +967,10 @@ function copyText(text, btn) {
 <script src="js/trailStore.js"></script>
 <script src="js/trailEnrichmentUI.js"></script>
 <script src="js/trailHydration.js"></script>
-<script>if (window.TK && window.TK.trailHydration) window.TK.trailHydration.initEnrichment();</script>
+<script src="js/trailDiscovery.js"></script>
+<script>
+if (window.TK && window.TK.trailHydration) window.TK.trailHydration.initEnrichment();
+if (window.TK && window.TK.trailDiscovery) window.TK.trailDiscovery.init();
+</script>
 </body>
 </html>
