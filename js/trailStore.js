@@ -58,7 +58,10 @@ window.TK = window.TK || {};
           elevation_gain_m:  enrichmentFields && enrichmentFields.elevation_gain_m != null ? enrichmentFields.elevation_gain_m : null,
           surface:           enrichmentFields && enrichmentFields.surface != null ? enrichmentFields.surface : null,
           difficulty:        enrichmentFields && enrichmentFields.difficulty != null ? enrichmentFields.difficulty : null,
-          osm_id:            enrichmentFields && enrichmentFields.osm_id != null ? enrichmentFields.osm_id : null
+          osm_id:            enrichmentFields && enrichmentFields.osm_id != null ? enrichmentFields.osm_id : null,
+          advisories:        enrichmentFields && Array.isArray(enrichmentFields.advisories) ? enrichmentFields.advisories : [],
+          lat:               enrichmentFields && enrichmentFields.lat != null ? enrichmentFields.lat : null,
+          lon:               enrichmentFields && enrichmentFields.lon != null ? enrichmentFields.lon : null
         }
       };
       write(trails);

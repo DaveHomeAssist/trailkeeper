@@ -115,6 +115,72 @@
     return relations[0] || ways[0] || null;
   }
 
+  // ── SAC scales considered "demanding" or harder ──
+  var DEMANDING_SAC = {
+    demanding_mountain_hiking: true,
+    alpine_hiking: true,
+    demanding_alpine_hiking: true,
+    difficult_alpine_hiking: true,
+  };
+
+  /**
+   * Build advisories array from OSM tags already present in the response.
+   * Pure tag inspection — no additional API call.
+   */
+  function buildAdvisories(tags) {
+    var advisories = [];
+
+    var access = (tags.access || '').toLowerCase();
+    if (access === 'private' || access === 'no') {
+      advisories.push({ type: 'access', level: 'warning', text: 'Private access \u2014 verify permission' });
+    }
+
+    if ((tags.seasonal || '').toLowerCase() === 'yes') {
+      advisories.push({ type: 'seasonal', level: 'warning', text: 'Seasonal access \u2014 verify conditions' });
+    }
+
+    if ((tags.winter_service || '').toLowerCase() === 'no') {
+      advisories.push({ type: 'winter', level: 'info', text: 'No winter maintenance' });
+    }
+
+    var surface = (tags.surface || '').toLowerCase();
+    if (surface === 'mud' || surface === 'sand') {
+      advisories.push({ type: 'surface', level: 'info', text: 'Soft surface \u2014 check recent weather' });
+    }
+
+    var vis = (tags.trail_visibility || '').toLowerCase();
+    if (vis === 'bad' || vis === 'horrible') {
+      advisories.push({ type: 'visibility', level: 'warning', text: 'Poor trail visibility' });
+    }
+
+    var sac = (tags.sac_scale || '').toLowerCase();
+    if (DEMANDING_SAC[sac]) {
+      advisories.push({ type: 'terrain', level: 'warning', text: 'Demanding terrain' });
+    }
+
+    return advisories;
+  }
+
+  /**
+   * Compute center lat/lon from all node elements (simple average).
+   */
+  function computeCenter(elements) {
+    var sumLat = 0, sumLon = 0, count = 0;
+    for (var i = 0; i < elements.length; i++) {
+      var el = elements[i];
+      if (el.type === 'node' && typeof el.lat === 'number' && typeof el.lon === 'number') {
+        sumLat += el.lat;
+        sumLon += el.lon;
+        count++;
+      }
+    }
+    if (count === 0) return { lat: null, lon: null };
+    return {
+      lat: Math.round((sumLat / count) * 1e6) / 1e6,
+      lon: Math.round((sumLon / count) * 1e6) / 1e6,
+    };
+  }
+
   /**
    * Normalize an Overpass response into the shared enrichment field shape.
    */
@@ -144,12 +210,21 @@
     // Elevation
     var elevationGain = computeElevation(elements);
 
+    // Trail condition advisories
+    var advisories = buildAdvisories(tags);
+
+    // Center coordinates from node geometry
+    var center = computeCenter(elements);
+
     return {
       distance_km: distanceKm,
       elevation_gain_m: elevationGain,
       surface: surface,
       difficulty: difficulty,
       osm_id: match.id,
+      advisories: advisories,
+      lat: center.lat,
+      lon: center.lon,
     };
   }
 

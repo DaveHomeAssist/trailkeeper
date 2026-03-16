@@ -69,7 +69,36 @@
 
       var refreshBtn = '<button class="enrich-refresh" aria-label="Refresh trail data" title="Refresh">↻</button>';
 
-      row.innerHTML = fieldsHtml + sourceHtml + refreshBtn;
+      // Advisory line from OSM condition tags
+      var advisoryHtml = '';
+      if (Array.isArray(f.advisories) && f.advisories.length > 0) {
+        var advisoryTexts = [];
+        for (var a = 0; a < f.advisories.length; a++) {
+          advisoryTexts.push(esc(f.advisories[a].text));
+        }
+        advisoryHtml = '<div class="enrich-advisory">\u26A0 ' + advisoryTexts.join(' \u00B7 ') + '</div>';
+      }
+
+      // Map thumbnail from enrichment coords or discovery coords
+      var mapHtml = '';
+      var mapLat = (f.lat != null && typeof f.lat === 'number') ? f.lat : null;
+      var mapLon = (f.lon != null && typeof f.lon === 'number') ? f.lon : null;
+      if (mapLat == null || mapLon == null) {
+        // Fall back to discovery coordinates if available
+        var disc = trail.discovery;
+        if (disc && typeof disc.lat === 'number' && typeof disc.lon === 'number') {
+          mapLat = disc.lat;
+          mapLon = disc.lon;
+        }
+      }
+      if (mapLat != null && mapLon != null) {
+        var trailLabel = esc(name || 'trail');
+        mapHtml = '<a class="trail-map-link" href="https://www.openstreetmap.org/?mlat=' + mapLat + '&mlon=' + mapLon + '#map=14/' + mapLat + '/' + mapLon + '" target="_blank" rel="noopener" aria-label="View ' + trailLabel + ' on OpenStreetMap">' +
+          '<img class="trail-map-thumb" src="https://staticmap.openstreetmap.de/staticmap.php?center=' + mapLat + ',' + mapLon + '&zoom=13&size=200x120&markers=' + mapLat + ',' + mapLon + ',red" alt="Map of ' + trailLabel + '" loading="lazy">' +
+          '</a>';
+      }
+
+      row.innerHTML = fieldsHtml + sourceHtml + refreshBtn + advisoryHtml + mapHtml;
 
       // Wire refresh callback
       var btn = row.querySelector('.enrich-refresh');

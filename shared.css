@@ -398,6 +398,19 @@ body::before {
 .enrich-refresh:hover { color: var(--fern); }
 .enrich-refresh:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
 .enrich-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+.enrich-advisory {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  color: var(--warn);
+  margin-top: 4px;
+  width: 100%;
+  order: 11;
+}
+/* ── TRAIL MAP THUMBNAIL ── */
+.trail-map-link { display: block; order: 12; width: 100%; margin-top: 6px; border-radius: 6px; overflow: hidden; line-height: 0; }
+.trail-map-thumb { width: 100%; max-width: 200px; height: auto; border-radius: 6px; border: 1px solid var(--mist); opacity: 0.9; transition: opacity 0.15s; }
+.trail-map-thumb:hover { opacity: 1; }
+
 .enrich-trigger {
   background: none;
   border: 1px solid var(--mist);
