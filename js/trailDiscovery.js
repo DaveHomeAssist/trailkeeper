@@ -173,7 +173,7 @@
       }
     });
 
-    store.set('trails', trails);
+    store.set('tk-trails', trails);
     if (typeof renderTrails === 'function') renderTrails();
     if (typeof toast === 'function') toast('\u201c' + result.name + '\u201d added', 'success');
 

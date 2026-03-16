@@ -1,75 +1,13 @@
 /* ── Trail Enrichment Orchestration (Agent 4) ──
    Wires adapter + store + UI into the render cycle.
-   Handles storage key bridge between inline script ("trails")
-   and trailStore module ("tk-trails").
+   Both the app and trailStore now use the same "tk-trails" key,
+   so no storage bridge is needed.
    Fails safely if any dependency is missing. */
 
 window.TK = window.TK || {};
 
 window.TK.trailHydration = {
   _hooked: false,
-
-  /* ── Storage bridge ──
-     Inline script uses localStorage key "trails".
-     trailStore module uses key "tk-trails".
-     We sync between them so enrichment data persists correctly. */
-
-  _syncToTkTrails: function () {
-    try {
-      if (typeof trails !== 'undefined') {
-        localStorage.setItem('tk-trails', JSON.stringify(trails));
-      }
-    } catch (_) {}
-  },
-
-  _syncFromTkTrails: function () {
-    try {
-      var tkData = JSON.parse(localStorage.getItem('tk-trails'));
-      if (!Array.isArray(tkData) || typeof trails === 'undefined') return;
-      // Match by trail name instead of index to survive deletions
-      var enrichMap = {};
-      for (var j = 0; j < tkData.length; j++) {
-        if (tkData[j] && tkData[j].enrichment && tkData[j].name) {
-          enrichMap[tkData[j].name.toLowerCase().trim()] = tkData[j].enrichment;
-        }
-      }
-      for (var i = 0; i < trails.length; i++) {
-        if (trails[i].name) {
-          var key = trails[i].name.toLowerCase().trim();
-          if (enrichMap[key]) {
-            trails[i].enrichment = enrichMap[key];
-          }
-        }
-      }
-      store.set('trails', trails);
-    } catch (_) {}
-  },
-
-  /* Sync trails → tk-trails after deletion so keys stay aligned.
-     Called from inline delete handler via window.TK.trailHydration.syncAfterDelete() */
-  syncAfterDelete: function () {
-    this._syncToTkTrails();
-  },
-
-  _migrateStorage: function () {
-    try {
-      var primary = localStorage.getItem('trails');
-      var secondary = localStorage.getItem('tk-trails');
-
-      if (primary && primary !== '[]') {
-        localStorage.setItem('tk-trails', primary);
-      } else if (secondary && secondary !== '[]') {
-        localStorage.setItem('trails', secondary);
-        if (typeof trails !== 'undefined') {
-          var parsed = JSON.parse(secondary);
-          if (Array.isArray(parsed)) {
-            trails.length = 0;
-            parsed.forEach(function (t) { trails.push(t); });
-          }
-        }
-      }
-    } catch (_) {}
-  },
 
   /* ── Init ── */
 
@@ -82,9 +20,6 @@ window.TK.trailHydration = {
     }
     if (this._hooked) return;
     this._hooked = true;
-
-    this._migrateStorage();
-    this._syncToTkTrails();
 
     var origRenderTrails = window.renderTrails;
     var self = this;
@@ -150,9 +85,13 @@ window.TK.trailHydration = {
       return;
     }
 
-    this._syncToTkTrails();
     Store.attachEnrichment(index, fields, 'overpass');
-    this._syncFromTkTrails();
+    // Reload trails from storage so the global array reflects enrichment
+    if (typeof store !== 'undefined') {
+      var updated = Store.getTrails();
+      trails.length = 0;
+      for (var i = 0; i < updated.length; i++) trails.push(updated[i]);
+    }
     renderTrails();
     UI.showToast('Trail info loaded', 'success');
   },
@@ -169,9 +108,12 @@ window.TK.trailHydration = {
     if (!t || !t.name) return;
 
     // 1. Mark stale and re-render to show stale indicator
-    this._syncToTkTrails();
     Store.markStale(index);
-    this._syncFromTkTrails();
+    if (typeof store !== 'undefined') {
+      var staleTrails = Store.getTrails();
+      trails.length = 0;
+      for (var j = 0; j < staleTrails.length; j++) trails.push(staleTrails[j]);
+    }
     renderTrails();
 
     // 2. Get fresh li reference after re-render
@@ -188,9 +130,10 @@ window.TK.trailHydration = {
     }
 
     if (fields) {
-      this._syncToTkTrails();
       Store.attachEnrichment(index, fields, 'overpass');
-      this._syncFromTkTrails();
+      var updated = Store.getTrails();
+      trails.length = 0;
+      for (var k = 0; k < updated.length; k++) trails.push(updated[k]);
       renderTrails();
       UI.showToast('Trail info updated', 'success');
     } else {

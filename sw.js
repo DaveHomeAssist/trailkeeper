@@ -1,9 +1,11 @@
-var CACHE_NAME = 'tk-v2';
+var CACHE_NAME = 'tk-v3';
 var APP_SHELL = [
   './',
   'index.html',
   'hiking-page.html',
   'shared.css',
+  'js/app.js',
+  'js/photoStore.js',
   'js/trailAdapter.js',
   'js/trailStore.js',
   'js/trailEnrichmentUI.js',
