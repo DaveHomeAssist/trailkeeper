@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trailkeeper</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0e0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trailkeeper">
+<link rel="apple-touch-icon" href="images/tk.png">
 <meta property="og:title" content="Trailkeeper — Backcountry Field Log">
 <meta property="og:description" content="Local-first hiking dashboard. Plan, log, track.">
 <meta property="og:image" content="https://davehomeassist.github.io/trailkeeper/images/tk2.png">
@@ -986,6 +992,11 @@ if (window.TK && window.TK.trailHydration) window.TK.trailHydration.initEnrichme
 if (window.TK && window.TK.trailDiscovery) window.TK.trailDiscovery.initDiscovery();
 if (window.TK && window.TK.trailExport) window.TK.trailExport.initExport();
 if (window.TK && window.TK.trailLog) window.TK.trailLog.initLog();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function() {});
+}
 </script>
 </body>
 </html>
