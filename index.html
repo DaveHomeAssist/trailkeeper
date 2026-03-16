@@ -124,6 +124,13 @@
               <button class="btn btn-ghost" id="weatherFetch">Check</button>
             </div>
             <div class="weather-result" id="weatherResult" role="status" aria-live="polite"></div>
+            <div class="trail-discovery">
+              <button id="findNearbyTrailsBtn" type="button" class="trail-discovery-trigger" style="display:none">Find nearby trails</button>
+              <div id="nearbyTrailsPanel" class="trail-discovery-panel" hidden>
+                <div class="trail-discovery-header"><span id="nearbyTrailsTitle">Nearby trails</span></div>
+                <div id="nearbyTrailsList" class="trail-discovery-list"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="field">
@@ -471,7 +478,7 @@ async function fetchWeather() {
     const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`).then(r => r.json());
     if (!geo.results?.length) throw new Error('not found');
     const { latitude, longitude, name, country_code } = geo.results[0];
-    window.TK = window.TK || {}; window.TK._lastGeo = { lat: latitude, lon: longitude, name: name };
+    window.TK = window.TK || {}; window.TK.weatherContext = { zip: city, lat: latitude, lon: longitude, placeLabel: name || city };
     const wx = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=1`).then(r => r.json());
     const d = wx.daily;
     const high = Math.round(d.temperature_2m_max[0]);
@@ -969,7 +976,7 @@ function copyText(text, btn) {
 <script src="js/trailDiscovery.js"></script>
 <script>
 if (window.TK && window.TK.trailHydration) window.TK.trailHydration.initEnrichment();
-if (window.TK && window.TK.trailDiscovery) window.TK.trailDiscovery.init();
+if (window.TK && window.TK.trailDiscovery) window.TK.trailDiscovery.initDiscovery();
 </script>
 </body>
 </html>
