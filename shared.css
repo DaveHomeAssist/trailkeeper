@@ -1,37 +1,37 @@
 /* ── Trailkeeper shared styles ── */
 
 :root {
-  --ink: #1e150d;
-  --paper: #f7f1e6;
-  --cream: #efe5d4;
-  --surface: #fffdf8;
-  --moss: #5a6e3a;
-  --fern: #6a8840;
-  --bark: #8b6434;
-  --stone: #5e5244;
-  --mist: #9a8d7a;
-  --amber: #d49230;
-  --shadow-moss: rgba(90,110,58,0.10);
-  --bg-moss-subtle: rgba(90,110,58,0.07);
-  --bg-bark-subtle: rgba(139,100,52,0.06);
-  --soft-success-bg: #ecf2e6;
-  --soft-warn-bg: #f5f0e2;
-  --soft-danger-bg: #f8e8e4;
-  --status-done-border: #a8c89a;
-  --status-planned-border: #c4d4a0;
-  --card-border-print: #c4b8a4;
-  --modal-backdrop: rgba(30,21,13,0.54);
-  --danger: #b53a2e;
-  --success: #4a7a3a;
-  --warn: #c48420;
+  --ink: #C8C2A0;
+  --paper: #1A1C14;
+  --cream: #252B1C;
+  --surface: #2C3320;
+  --moss: #4A7C59;
+  --fern: #00E5C3;
+  --bark: #D4B483;
+  --stone: #8A8470;
+  --mist: #5A6650;
+  --amber: #E8A844;
+  --shadow-moss: rgba(0,0,0,0.38);
+  --bg-moss-subtle: rgba(74,124,89,0.08);
+  --bg-bark-subtle: rgba(212,180,131,0.04);
+  --soft-success-bg: rgba(74,124,89,0.15);
+  --soft-warn-bg: rgba(232,168,68,0.14);
+  --soft-danger-bg: rgba(196,92,42,0.14);
+  --status-done-border: rgba(109,184,127,0.5);
+  --status-planned-border: rgba(232,168,68,0.4);
+  --card-border-print: #4A5240;
+  --modal-backdrop: rgba(0,0,0,0.62);
+  --danger: #C45C2A;
+  --success: #6DB87F;
+  --warn: #E8A844;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 14px;
   --space-lg: 24px;
   --space-xl: 48px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,7 +85,7 @@ body::before {
 .section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 
 /* ── CARDS ── */
-.card { background: var(--surface); border: 1px solid var(--mist); border-radius: var(--radius-md); padding: 20px 22px; transition: border-color 0.2s, box-shadow 0.2s; }
+.card { background: var(--surface); border: 1px solid rgba(200,194,160,0.12); border-radius: var(--radius-md); padding: 20px 22px; transition: border-color 0.2s, box-shadow 0.2s; }
 .card:hover { border-color: var(--fern); box-shadow: 0 2px 12px var(--shadow-moss); }
 
 /* ── FIELDS ── */
@@ -616,31 +616,31 @@ body::before {
   .photo-strip { grid-template-columns: 1fr; }
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --ink: #e8e4dc;
-    --paper: #1a1a17;
-    --cream: #2a2820;
-    --surface: #232118;
-    --moss: #7aad5e;
-    --fern: #8bc06a;
-    --bark: #cabba0;
-    --stone: #b7b19f;
-    --mist: #8e897b;
-    --amber: #d8ac62;
-    --shadow-moss: rgba(0,0,0,0.38);
-    --bg-moss-subtle: rgba(122,173,94,0.08);
-    --bg-bark-subtle: rgba(202,187,160,0.04);
-    --soft-success-bg: rgba(58,107,74,0.24);
-    --soft-warn-bg: rgba(185,122,32,0.2);
-    --soft-danger-bg: rgba(185,64,64,0.24);
-    --status-done-border: rgba(138,197,155,0.7);
-    --status-planned-border: rgba(208,185,126,0.7);
-    --card-border-print: #646055;
-    --modal-backdrop: rgba(0,0,0,0.62);
-    --danger: #d16e6e;
-    --success: #89cf9b;
-    --warn: #e1b264;
+    --ink: #1e150d;
+    --paper: #f7f1e6;
+    --cream: #efe5d4;
+    --surface: #fffdf8;
+    --moss: #4A7C59;
+    --fern: #00997F;
+    --bark: #8b6434;
+    --stone: #5e5244;
+    --mist: #9a8d7a;
+    --amber: #c48420;
+    --shadow-moss: rgba(74,124,89,0.10);
+    --bg-moss-subtle: rgba(74,124,89,0.07);
+    --bg-bark-subtle: rgba(212,180,131,0.06);
+    --soft-success-bg: #e4f0e0;
+    --soft-warn-bg: #f5f0e2;
+    --soft-danger-bg: #f8e8e4;
+    --status-done-border: #a8c89a;
+    --status-planned-border: #c4d4a0;
+    --card-border-print: #c4b8a4;
+    --modal-backdrop: rgba(30,21,13,0.54);
+    --danger: #b53a2e;
+    --success: #4a7a3a;
+    --warn: #c48420;
   }
-  .toast { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
 }
+.toast { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
