@@ -1,4 +1,4 @@
-var CACHE_NAME = 'tk-v1';
+var CACHE_NAME = 'tk-v2';
 var APP_SHELL = [
   './',
   'index.html',

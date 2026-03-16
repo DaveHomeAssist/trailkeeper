@@ -560,6 +560,7 @@ function renderTrails() {
       const removedName = t.name;
       trails.splice(i, 1);
       store.set('trails', trails);
+      if (window.TK && window.TK.trailHydration) window.TK.trailHydration.syncAfterDelete();
       renderTrails();
       toast('Trail removed');
       showUndoToast(`Removed "${removedName}"`, () => {

@@ -26,13 +26,29 @@ window.TK.trailHydration = {
     try {
       var tkData = JSON.parse(localStorage.getItem('tk-trails'));
       if (!Array.isArray(tkData) || typeof trails === 'undefined') return;
-      for (var i = 0; i < trails.length && i < tkData.length; i++) {
-        if (tkData[i] && tkData[i].enrichment) {
-          trails[i].enrichment = tkData[i].enrichment;
+      // Match by trail name instead of index to survive deletions
+      var enrichMap = {};
+      for (var j = 0; j < tkData.length; j++) {
+        if (tkData[j] && tkData[j].enrichment && tkData[j].name) {
+          enrichMap[tkData[j].name.toLowerCase().trim()] = tkData[j].enrichment;
+        }
+      }
+      for (var i = 0; i < trails.length; i++) {
+        if (trails[i].name) {
+          var key = trails[i].name.toLowerCase().trim();
+          if (enrichMap[key]) {
+            trails[i].enrichment = enrichMap[key];
+          }
         }
       }
       store.set('trails', trails);
     } catch (_) {}
+  },
+
+  /* Sync trails → tk-trails after deletion so keys stay aligned.
+     Called from inline delete handler via window.TK.trailHydration.syncAfterDelete() */
+  syncAfterDelete: function () {
+    this._syncToTkTrails();
   },
 
   _migrateStorage: function () {
