@@ -135,6 +135,10 @@
           <span class="field-text">water · snacks · layers · headlamp · first aid</span>
         </div>
       </div>
+      <div class="trail-export">
+        <button id="copyPlanBtn" type="button" class="trail-export-btn">Copy plan</button>
+        <button id="downloadBackupBtn" type="button" class="trail-export-btn trail-export-secondary">Download backup</button>
+      </div>
       <div class="section-divider">
         <button class="trip-notes-toggle" id="notesToggle" aria-expanded="false" aria-controls="notesBody">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline id="notesArrow" points="9 18 15 12 9 6"/></svg>
@@ -974,9 +978,13 @@ function copyText(text, btn) {
 <script src="js/trailEnrichmentUI.js"></script>
 <script src="js/trailHydration.js"></script>
 <script src="js/trailDiscovery.js"></script>
+<script src="js/trailExport.js"></script>
+<script src="js/trailLog.js"></script>
 <script>
 if (window.TK && window.TK.trailHydration) window.TK.trailHydration.initEnrichment();
 if (window.TK && window.TK.trailDiscovery) window.TK.trailDiscovery.initDiscovery();
+if (window.TK && window.TK.trailExport) window.TK.trailExport.initExport();
+if (window.TK && window.TK.trailLog) window.TK.trailLog.initLog();
 </script>
 </body>
 </html>

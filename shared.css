@@ -656,4 +656,166 @@ body::before {
     --warn: #c48420;
   }
 }
+/* ── EXPORT ── */
+.trail-export { display: flex; gap: 8px; margin-top: 10px; }
+.trail-export-btn { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--mist); background: transparent; color: var(--stone); cursor: pointer; transition: all 0.15s; min-height: 36px; flex: 1; }
+.trail-export-btn:hover { border-color: var(--fern); color: var(--fern); background: var(--cream); }
+.trail-export-btn:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
+.trail-export-secondary { opacity: 0.7; }
+
+/* ── TRAIL LOG ── */
+.trail-log-form {
+  width: 100%;
+  order: 20;
+  background: var(--cream);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-top: 8px;
+  animation: slideUp 0.2s ease;
+}
+.trail-log-field {
+  margin-bottom: 12px;
+}
+.trail-log-field:last-of-type {
+  margin-bottom: 14px;
+}
+.trail-log-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stone);
+  display: block;
+  margin-bottom: 6px;
+}
+.trail-log-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid var(--mist);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  min-height: 38px;
+  transition: border-color 0.15s;
+}
+.trail-log-date:focus { border-color: var(--fern); }
+.trail-log-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.trail-log-condition {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--mist);
+  background: var(--surface);
+  color: var(--stone);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 36px;
+}
+.trail-log-condition:hover {
+  border-color: var(--fern);
+  color: var(--fern);
+}
+.trail-log-condition.active {
+  border-color: var(--fern);
+  background: var(--fern);
+  color: white;
+}
+.trail-log-rating {
+  display: flex;
+  gap: 2px;
+}
+.trail-log-star {
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--mist);
+  background: none;
+  border: none;
+  padding: 4px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.1s, transform 0.1s;
+}
+.trail-log-star:hover { color: var(--amber); transform: scale(1.15); }
+.trail-log-star.filled { color: var(--amber); }
+.trail-log-note {
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ink);
+  border: 1px solid var(--mist);
+  border-radius: 6px;
+  background: var(--paper);
+  outline: none;
+  resize: none;
+  line-height: 1.6;
+  padding: 8px 10px;
+  min-height: 50px;
+  transition: border-color 0.15s;
+}
+.trail-log-note:focus { border-color: var(--fern); }
+.trail-log-note::placeholder { color: var(--mist); font-style: italic; }
+.trail-log-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.trail-log-actions .btn {
+  font-size: 10px;
+  padding: 7px 14px;
+  min-height: 36px;
+}
+.trail-log-summary {
+  width: 100%;
+  order: 21;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--stone);
+  padding: 4px 6px 2px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+.trail-log-summary:hover {
+  background: var(--cream);
+  color: var(--ink);
+}
+.trail-log-count {
+  font-size: 10px;
+  color: var(--mist);
+}
+.trail-log-prompt {
+  order: 21;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mist);
+  padding: 4px 6px;
+  text-align: left;
+  transition: color 0.15s;
+}
+.trail-log-prompt:hover { color: var(--fern); }
+
 .toast { box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
