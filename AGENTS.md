@@ -24,8 +24,13 @@ Trailkeeper is a local first hiking log and field dashboard. It supports plannin
 
 | ID | Severity | Status | Title | Notes |
 |----|----------|--------|-------|-------|
-
-No active issues are recorded in this file yet.
+| 001 | P1 | open | Service worker registration swallows errors silently | sw.js register catch is empty; user never knows if offline support failed |
+| 002 | P1 | open | Overpass API timeout returns null with no error context | trailDiscovery.js abort produces same message as network error |
+| 003 | P1 | open | Trail status toggle has no undo | Cycling status via button can lose planned state without recovery |
+| 004 | P2 | open | No data import functionality | Export works but users cannot restore JSON backups on new devices |
+| 005 | P2 | open | localStorage quota exceeded fails silently on log save | trailLog.js setLogs catches errors but never notifies user |
+| 006 | P2 | open | Service worker cache version never auto-increments | tk-v3 hardcoded; users may never see updates without force-refresh |
+| 007 | P2 | open | Weather geocoding conflates network error with location not found | app.js shows same message for both failure modes |
 
 ## Session Log
 
