@@ -398,6 +398,24 @@ body::before {
 .enrich-refresh:hover { color: var(--fern); }
 .enrich-refresh:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
 .enrich-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+.enrich-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--mist);
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 3px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.enrich-clear:hover { color: var(--danger); background: var(--soft-danger-bg); }
+.enrich-clear:focus-visible { outline: 2px solid var(--fern); outline-offset: 2px; }
 .enrich-advisory {
   font-family: 'DM Mono', monospace;
   font-size: 10.5px;
@@ -494,6 +512,36 @@ body::before {
   padding: 1px 5px;
   background: var(--surface);
   color: var(--ink);
+}
+
+.section-state {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--mist);
+  background: var(--cream);
+  animation: fadeIn 0.2s ease;
+}
+.section-state.is-empty { border-color: rgba(138,132,112,0.4); }
+.section-state.is-active { border-color: rgba(232,168,68,0.4); background: rgba(232,168,68,0.08); }
+.section-state.is-complete { border-color: rgba(109,184,127,0.45); background: rgba(109,184,127,0.08); }
+.section-state.is-error { border-color: rgba(196,92,42,0.45); background: rgba(196,92,42,0.1); }
+.section-state-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-bottom: 6px;
+}
+.section-state-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.global-state {
+  margin-bottom: 28px;
 }
 
 /* ── COPY BUTTON ── */

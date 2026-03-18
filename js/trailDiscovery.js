@@ -238,8 +238,16 @@
     if (btn) { btn.textContent = 'Find nearby trails'; btn.disabled = false; }
 
     if (results === null) {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.overpassError = 'Nearby trail search is unavailable right now. Check weather again or retry later.';
+      }
+      if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
       renderDiscoveryState(list, 'error', 'Could not reach trail data. Check your connection.');
     } else {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.overpassError = '';
+      }
+      if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
       renderNearbyTrails(results, ctx.placeLabel || '');
     }
 

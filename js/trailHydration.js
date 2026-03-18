@@ -49,7 +49,8 @@ window.TK.trailHydration = {
 
       UI.renderEnrichmentRow(li, t, i, {
         onEnrich: function () { self._handleEnrich(i); },
-        onRefresh: function () { self._handleRefresh(i); }
+        onRefresh: function () { self._handleRefresh(i); },
+        onClear: function () { self._handleClear(i); }
       });
     });
   },
@@ -81,10 +82,17 @@ window.TK.trailHydration = {
     UI.hideLoading(li);
 
     if (!fields) {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.overpassError = 'Could not fetch trail data from Overpass. Try again when the connection is stable.';
+      }
+      if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
       UI.showToast('Could not fetch trail info', 'error');
       return;
     }
 
+    if (window.TK && window.TK.runtimeState) {
+      window.TK.runtimeState.overpassError = '';
+    }
     Store.attachEnrichment(index, fields, 'overpass');
     // Reload trails from storage so the global array reflects enrichment
     if (typeof store !== 'undefined') {
@@ -130,6 +138,9 @@ window.TK.trailHydration = {
     }
 
     if (fields) {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.overpassError = '';
+      }
       Store.attachEnrichment(index, fields, 'overpass');
       var updated = Store.getTrails();
       trails.length = 0;
@@ -137,8 +148,38 @@ window.TK.trailHydration = {
       renderTrails();
       UI.showToast('Trail info updated', 'success');
     } else {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.overpassError = 'Refresh failed. Cached trail data is still available.';
+      }
+      if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
       UI.hideLoading(li);
       UI.showToast('Refresh failed, using cached data', 'error');
+    }
+  },
+
+  _handleClear: function (index) {
+    var Store = window.TK.trailStore;
+    var UI = window.TK.trailEnrichmentUI;
+    if (!Store || !UI) return;
+    if (typeof trails === 'undefined' || index >= trails.length) return;
+
+    var prevTrails = JSON.parse(JSON.stringify(trails));
+    Store.clearEnrichment(index);
+    var updated = Store.getTrails();
+    trails.length = 0;
+    for (var i = 0; i < updated.length; i++) trails.push(updated[i]);
+    renderTrails();
+    UI.showToast('Trail data cleared');
+    if (typeof showUndoToast === 'function') {
+      showUndoToast('Trail data cleared', function () {
+        if (typeof store !== 'undefined') {
+          store.set('tk-trails', prevTrails);
+          trails.length = 0;
+          for (var j = 0; j < prevTrails.length; j++) trails.push(prevTrails[j]);
+          renderTrails();
+          UI.showToast('Trail data restored', 'success');
+        }
+      });
     }
   }
 };

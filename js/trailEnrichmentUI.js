@@ -68,6 +68,7 @@
         '</span>';
 
       var refreshBtn = '<button class="enrich-refresh" aria-label="Refresh trail data" title="Refresh">↻</button>';
+      var clearBtn = '<button class="enrich-clear" aria-label="Clear trail data" title="Clear">✕</button>';
 
       // Advisory line from OSM condition tags
       var advisoryHtml = '';
@@ -98,7 +99,7 @@
           '</a>';
       }
 
-      row.innerHTML = fieldsHtml + sourceHtml + refreshBtn + advisoryHtml + mapHtml;
+      row.innerHTML = fieldsHtml + sourceHtml + refreshBtn + clearBtn + advisoryHtml + mapHtml;
 
       // Wire refresh callback
       var btn = row.querySelector('.enrich-refresh');
@@ -106,6 +107,13 @@
         btn.addEventListener('click', function (e) {
           e.stopPropagation();
           callbacks.onRefresh(index);
+        });
+      }
+      var clear = row.querySelector('.enrich-clear');
+      if (clear && callbacks && callbacks.onClear) {
+        clear.addEventListener('click', function (e) {
+          e.stopPropagation();
+          callbacks.onClear(index);
         });
       }
 
