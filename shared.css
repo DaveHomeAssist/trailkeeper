@@ -612,6 +612,7 @@ body::before {
   pointer-events: none;
   transition: opacity 0.2s, transform 0.2s;
 }
+.back-to-top:hover { border-color: var(--fern); color: var(--fern); }
 .back-to-top.visible {
   opacity: 1;
   transform: translateY(0);

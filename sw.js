@@ -14,7 +14,11 @@ var APP_SHELL = [
   'js/trailLog.js',
   'js/trailExport.js',
   'images/trailkeeper-logo-light.png',
-  'images/tk.png'
+  'assets/icons/favicon/favicon.svg',
+  'assets/icons/favicon/favicon.png',
+  'assets/icons/favicon/apple-touch-icon.png',
+  'assets/icons/favicon/icon-192.png',
+  'assets/icons/favicon/icon-512.png'
 ];
 
 self.addEventListener('install', function(e) {

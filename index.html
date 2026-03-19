@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trailkeeper</title>
-<link rel="icon" type="image/svg+xml" href="images/favicon.svg">
-<link rel="icon" href="images/tk.png" type="image/png">
+<link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg">
+<link rel="icon" href="assets/icons/favicon/favicon.png" type="image/png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0e0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trailkeeper">
-<link rel="apple-touch-icon" href="images/tk.png">
+<link rel="apple-touch-icon" href="assets/icons/favicon/apple-touch-icon.png">
 <meta property="og:title" content="Trailkeeper — Backcountry Field Log">
 <meta property="og:description" content="Local-first hiking dashboard. Plan, log, track.">
 <meta property="og:image" content="https://davehomeassist.github.io/trailkeeper/images/tk2.png">
@@ -297,7 +297,7 @@
 
 </div>
 <footer style="text-align:center;padding:24px 0 12px;font-size:10px;letter-spacing:0.14em;opacity:0.35">
-  <a href="brand.html" style="color:inherit;text-decoration:none">TRAILKEEPER — BACKCOUNTRY FIELD LOG</a>
+  <a href="brand.html" style="color:inherit;text-decoration:none" aria-label="Trailkeeper brand and credits">TRAILKEEPER — BACKCOUNTRY FIELD LOG</a>
 </footer>
 <a class="back-to-top" id="backToTop" href="#top" aria-label="Back to top">Top</a>
 
@@ -318,7 +318,9 @@ if (window.TK && window.TK.trailLog) window.TK.trailLog.initLog();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function() {});
+  navigator.serviceWorker.register('sw.js').catch(function(err) {
+    console.warn('Trailkeeper service worker registration failed.', err);
+  });
 }
 </script>
 </body>
