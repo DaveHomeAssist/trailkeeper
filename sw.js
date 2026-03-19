@@ -1,8 +1,9 @@
-var CACHE_NAME = 'tk-v3';
+var CACHE_NAME = 'tk-v4';
 var APP_SHELL = [
   './',
   'index.html',
   'hiking-page.html',
+  'manifest.json',
   'shared.css',
   'js/app.js',
   'js/photoStore.js',
@@ -13,6 +14,7 @@ var APP_SHELL = [
   'js/trailDiscovery.js',
   'js/trailLog.js',
   'js/trailExport.js',
+  'brand.html',
   'images/trailkeeper-logo-light.png',
   'assets/icons/favicon/favicon.svg',
   'assets/icons/favicon/favicon.png',

@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trailkeeper</title>
+<meta name="application-name" content="Trailkeeper">
 <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg">
-<link rel="icon" href="assets/icons/favicon/favicon.png" type="image/png">
+<link rel="icon" href="assets/icons/favicon/favicon.png" type="image/png" sizes="2048x2048">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0e0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,26 +19,16 @@
 <meta property="og:type" content="website">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<style>
-  /* Page-specific overrides go here */
-  a:focus-visible,
-  button:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible,
-  [contenteditable="true"]:focus-visible {
-    outline: 2px solid #c98d2b;
-    outline-offset: 3px;
-  }
-</style>
 </head>
 <body>
 
-<div class="toast-container" id="toastContainer" role="status" aria-live="assertive"></div>
+<a class="skip-link" href="#top">Skip to content</a>
+
+<div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- LOG MODAL -->
-<div class="modal-backdrop" id="logModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal">
+<div class="modal-backdrop" id="logModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
     <h2 class="modal-title" id="modalTitle">Log a Hike</h2>
     <div class="modal-row">
       <div class="modal-field">
@@ -59,40 +50,34 @@
         <input class="modal-input" id="logElevation" type="number" placeholder="1200" min="0">
       </div>
     </div>
-    <div class="modal-field">
-      <label class="modal-label">Difficulty</label>
-      <div class="modal-rating" id="ratingStars" role="group" aria-label="Difficulty 1-5">
-        <button class="rating-star" data-val="1" aria-label="1 star">&#9733;</button>
-        <button class="rating-star" data-val="2" aria-label="2 stars">&#9733;</button>
-        <button class="rating-star" data-val="3" aria-label="3 stars">&#9733;</button>
-        <button class="rating-star" data-val="4" aria-label="4 stars">&#9733;</button>
-        <button class="rating-star" data-val="5" aria-label="5 stars">&#9733;</button>
+    <fieldset class="modal-field">
+      <legend class="modal-label">Difficulty</legend>
+      <div class="modal-rating" id="ratingStars">
+        <button class="rating-star" type="button" data-val="1" aria-label="1 star">&#9733;</button>
+        <button class="rating-star" type="button" data-val="2" aria-label="2 stars">&#9733;</button>
+        <button class="rating-star" type="button" data-val="3" aria-label="3 stars">&#9733;</button>
+        <button class="rating-star" type="button" data-val="4" aria-label="4 stars">&#9733;</button>
+        <button class="rating-star" type="button" data-val="5" aria-label="5 stars">&#9733;</button>
       </div>
-    </div>
+    </fieldset>
     <div class="modal-field">
       <label class="modal-label" for="logNote">One sentence note</label>
       <textarea class="modal-textarea" id="logNote" placeholder="Steep switchbacks but worth it for the summit view&#8230;"></textarea>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" id="logCancel">Cancel</button>
-      <button class="btn btn-primary" id="logSave">Save hike</button>
+      <button class="btn btn-ghost" id="logCancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="logSave" type="button">Save hike</button>
     </div>
   </div>
 </div>
 
-<div class="page" id="top">
+<main class="page" id="top" tabindex="-1">
 
-  <a href="https://davehomeassist.github.io/"
-     style="display:inline-flex;align-items:center;gap:.35rem;position:fixed;
-            top:.65rem;left:.85rem;z-index:100;font-size:.7rem;
-            letter-spacing:.04em;color:rgba(0,0,0,0.35);
-            text-decoration:none;transition:color .15s;"
-     onmouseover="this.style.color='currentColor'"
-     onmouseout="this.style.color='rgba(0,0,0,0.35)'">&larr; DaveHomeAssist</a>
+  <a class="home-link" href="https://davehomeassist.github.io/">&larr; DaveHomeAssist</a>
 
   <!-- HEADER -->
   <header class="page-header">
-    <img class="page-icon" src="images/trailkeeper-logo-light.png" alt="Trailkeeper logo" width="48" height="48">
+    <img class="page-icon" src="images/trailkeeper-logo-light.png" alt="" aria-hidden="true" width="48" height="48">
     <h1 class="page-title">Trail<span>keeper</span></h1>
   </header>
 
@@ -117,8 +102,8 @@
     <div class="section-label">Today</div>
     <div class="section-header">
       <h2 class="section-title">Today's Plan</h2>
-      <button class="btn btn-ghost" onclick="window.print()" aria-label="Print today's plan">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <button class="btn btn-ghost" onclick="window.print()" aria-label="Print today's plan" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Print
       </button>
     </div>
@@ -127,15 +112,15 @@
         <div class="field">
           <span class="field-key">Trail</span>
           <div class="field-value-row">
-            <div class="field-editable" id="planTrail" contenteditable="true" role="textbox" aria-label="Trail name" data-placeholder="— add trail name" data-key="planTrail"></div>
-            <button class="copy-btn" data-copy-from="planTrail" aria-label="Copy trail name">Copy</button>
+            <div class="field-editable" id="planTrail" contenteditable="plaintext-only" role="textbox" aria-label="Trail name" data-placeholder="— add trail name" data-key="planTrail"></div>
+            <button class="copy-btn" data-copy-from="planTrail" aria-label="Copy trail name" type="button">Copy</button>
           </div>
         </div>
         <div class="field">
           <span class="field-key">Start time</span>
           <div class="field-value-row">
-            <div class="field-editable" id="planTime" contenteditable="true" role="textbox" aria-label="Start time" data-placeholder="— set a time" data-key="planTime"></div>
-            <button class="copy-btn" data-copy-from="planTime" aria-label="Copy start time">Copy</button>
+            <div class="field-editable" id="planTime" contenteditable="plaintext-only" role="textbox" aria-label="Start time" data-placeholder="— set a time" data-key="planTime"></div>
+            <button class="copy-btn" data-copy-from="planTime" aria-label="Copy start time" type="button">Copy</button>
           </div>
         </div>
         <div class="field">
@@ -143,7 +128,7 @@
           <div class="full-width">
             <div class="weather-row">
               <input class="weather-input" id="weatherCity" type="text" placeholder="City or zip code" aria-label="City for weather forecast">
-              <button class="btn btn-ghost" id="weatherFetch">Check</button>
+              <button class="btn btn-ghost" id="weatherFetch" type="button">Check</button>
             </div>
             <div class="weather-result" id="weatherResult" role="status" aria-live="polite"></div>
             <div class="trail-discovery">
@@ -165,8 +150,8 @@
         <button id="downloadBackupBtn" type="button" class="trail-export-btn trail-export-secondary">Download backup</button>
       </div>
       <div class="section-divider">
-        <button class="trip-notes-toggle" id="notesToggle" aria-expanded="false" aria-controls="notesBody">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline id="notesArrow" points="9 18 15 12 9 6"/></svg>
+        <button class="trip-notes-toggle" id="notesToggle" aria-expanded="false" aria-controls="notesBody" type="button">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><polyline id="notesArrow" points="9 18 15 12 9 6"/></svg>
           Trip notes
         </button>
         <div class="trip-notes-body" id="notesBody">
@@ -190,7 +175,7 @@
           <option value="Half day">Half day</option>
           <option value="Full day">Full day</option>
         </select>
-        <button class="btn btn-primary" id="trailAdd">+ Add</button>
+        <button class="btn btn-primary" id="trailAdd" type="button">+ Add</button>
       </div>
     </div>
   </section>
@@ -200,13 +185,13 @@
     <div class="section-label">Record</div>
     <div class="section-header">
       <h2 class="section-title">Log</h2>
-      <button class="btn btn-primary" id="openLogModal">+ Log hike</button>
+      <button class="btn btn-primary" id="openLogModal" type="button">+ Log hike</button>
     </div>
     <div class="log-stats">
-      <div class="stat-card"><span class="stat-num" id="statHikes">0</span><span class="stat-label">Hikes</span></div>
-      <div class="stat-card"><span class="stat-num" id="statMiles">0</span><span class="stat-label">Miles</span></div>
-      <div class="stat-card"><span class="stat-num" id="statElev">0</span><span class="stat-label">Elev ft</span></div>
-      <div class="stat-card"><span class="stat-num" id="statLongest">0</span><span class="stat-label">Longest</span></div>
+      <dl class="stat-card"><dt class="stat-label">Hikes</dt><dd class="stat-num" id="statHikes">0</dd></dl>
+      <dl class="stat-card"><dt class="stat-label">Miles</dt><dd class="stat-num" id="statMiles">0</dd></dl>
+      <dl class="stat-card"><dt class="stat-label">Elev ft</dt><dd class="stat-num" id="statElev">0</dd></dl>
+      <dl class="stat-card"><dt class="stat-label">Longest</dt><dd class="stat-num" id="statLongest">0</dd></dl>
     </div>
     <div class="card">
       <ul class="log-entries" id="logEntries" aria-live="polite"></ul>
@@ -219,14 +204,14 @@
     <h2 class="section-title">Conditions &amp; Notes</h2>
     <div class="two-col">
       <div class="card">
-        <span class="conditions-heading">Terrain</span>
-        <div class="conditions-sublabel">Mud &middot; Ice &middot; Bugs</div>
-        <textarea class="conditions-textarea" id="condTerrain" placeholder="— add current conditions" rows="3"></textarea>
+        <label class="conditions-heading" for="condTerrain">Terrain</label>
+        <div class="conditions-sublabel" id="condTerrain-hint">Mud &middot; Ice &middot; Bugs</div>
+        <textarea class="conditions-textarea" id="condTerrain" aria-describedby="condTerrain-hint" placeholder="— add current conditions" rows="3"></textarea>
       </div>
       <div class="card">
-        <span class="conditions-heading">Access</span>
-        <div class="conditions-sublabel">Parking &middot; Permits &middot; Closures</div>
-        <textarea class="conditions-textarea" id="condAccess" placeholder="— add access notes" rows="3"></textarea>
+        <label class="conditions-heading" for="condAccess">Access</label>
+        <div class="conditions-sublabel" id="condAccess-hint">Parking &middot; Permits &middot; Closures</div>
+        <textarea class="conditions-textarea" id="condAccess" aria-describedby="condAccess-hint" placeholder="— add access notes" rows="3"></textarea>
       </div>
     </div>
   </section>
@@ -238,22 +223,22 @@
     <div class="card">
       <div class="checklist-header">
         <span class="checklist-progress" id="checkProgress" aria-live="polite">0 / 8 packed</span>
-        <button class="btn btn-ghost" id="checkReset">Reset</button>
+        <button class="btn btn-ghost" id="checkReset" type="button">Reset</button>
       </div>
       <ul class="checklist" id="checklist" aria-label="Gear checklist">
-        <li class="check-item"><input type="checkbox" aria-label="Shoes and socks"> Shoes &amp; socks</li>
-        <li class="check-item"><input type="checkbox" aria-label="Water"> Water</li>
-        <li class="check-item"><input type="checkbox" aria-label="Snacks"> Snacks</li>
-        <li class="check-item"><input type="checkbox" aria-label="Layers"> Layers</li>
-        <li class="check-item"><input type="checkbox" aria-label="Headlamp"> Headlamp</li>
-        <li class="check-item"><input type="checkbox" aria-label="First aid"> First aid</li>
-        <li class="check-item"><input type="checkbox" aria-label="Bug spray and sunscreen"> Bug spray &amp; sunscreen</li>
-        <li class="check-item"><input type="checkbox" aria-label="Offline map"> Map (offline)</li>
+        <li class="check-item"><input type="checkbox" id="gear-shoes"><label for="gear-shoes">Shoes &amp; socks</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-water"><label for="gear-water">Water</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-snacks"><label for="gear-snacks">Snacks</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-layers"><label for="gear-layers">Layers</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-headlamp"><label for="gear-headlamp">Headlamp</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-first-aid"><label for="gear-first-aid">First aid</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-bug-spray"><label for="gear-bug-spray">Bug spray &amp; sunscreen</label></li>
+        <li class="check-item"><input type="checkbox" id="gear-map"><label for="gear-map">Map (offline)</label></li>
       </ul>
       <div class="checklist-add">
         <label class="visually-hidden" for="gearInput">Custom gear item</label>
         <input class="checklist-add-input" id="gearInput" type="text" placeholder="Add custom gear item&#8230;">
-        <button class="btn btn-ghost" id="gearAdd">+ Add</button>
+        <button class="btn btn-ghost" id="gearAdd" type="button">+ Add</button>
       </div>
     </div>
   </section>
@@ -267,22 +252,22 @@
         <li class="link-item">
           <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
           <span class="link-label">AllTrails</span>
-          <div class="link-editable" contenteditable="true" role="textbox" aria-label="AllTrails link" data-placeholder="— paste link" data-key="linkAllTrails"></div>
+          <div class="link-editable" contenteditable="plaintext-only" role="textbox" aria-label="AllTrails link" data-placeholder="— paste link" data-key="linkAllTrails"></div>
         </li>
         <li class="link-item">
           <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
           <span class="link-label">Park website</span>
-          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Park website link" data-placeholder="— paste link" data-key="linkPark"></div>
+          <div class="link-editable" contenteditable="plaintext-only" role="textbox" aria-label="Park website link" data-placeholder="— paste link" data-key="linkPark"></div>
         </li>
         <li class="link-item">
           <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></span>
           <span class="link-label">Weather</span>
-          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Weather link" data-placeholder="— paste link" data-key="linkWeather"></div>
+          <div class="link-editable" contenteditable="plaintext-only" role="textbox" aria-label="Weather link" data-placeholder="— paste link" data-key="linkWeather"></div>
         </li>
         <li class="link-item">
           <span class="link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="1.8"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></span>
           <span class="link-label">Offline map</span>
-          <div class="link-editable" contenteditable="true" role="textbox" aria-label="Offline map link" data-placeholder="— paste link" data-key="linkOfflineMap"></div>
+          <div class="link-editable" contenteditable="plaintext-only" role="textbox" aria-label="Offline map link" data-placeholder="— paste link" data-key="linkOfflineMap"></div>
         </li>
       </ul>
     </div>
@@ -295,9 +280,9 @@
     <div class="photo-strip" id="photoStrip"></div>
   </section>
 
-</div>
-<footer style="text-align:center;padding:24px 0 12px;font-size:10px;letter-spacing:0.14em;opacity:0.35">
-  <a href="brand.html" style="color:inherit;text-decoration:none" aria-label="Trailkeeper brand and credits">TRAILKEEPER — BACKCOUNTRY FIELD LOG</a>
+  </main>
+<footer class="page-footer">
+  <a href="brand.html" aria-label="Trailkeeper brand and credits">TRAILKEEPER — BACKCOUNTRY FIELD LOG</a>
 </footer>
 <a class="back-to-top" id="backToTop" href="#top" aria-label="Back to top">Top</a>
 

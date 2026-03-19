@@ -2,7 +2,9 @@
   "name": "Trailkeeper",
   "short_name": "Trailkeeper",
   "description": "Hiking day planner — weather, trails, enrichment",
-  "start_url": ".",
+  "lang": "en",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0a0e0c",
   "theme_color": "#0a0e0c",
@@ -15,7 +17,8 @@
     {
       "src": "assets/icons/favicon/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
