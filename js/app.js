@@ -354,7 +354,7 @@ function updateActiveSectionNav() {
 
 function updateBackToTop() {
   const threshold = firstSection ? firstSection.offsetTop + firstSection.offsetHeight : 300;
-  backToTop.classList.toggle('visible', window.scrollY > threshold);
+  backToTop.classList.toggle('is-visible', window.scrollY > threshold);
   updateActiveSectionNav();
 }
 window.addEventListener('scroll', updateBackToTop, { passive: true });
@@ -378,12 +378,12 @@ const notesToggle = document.getElementById('notesToggle');
 const notesBody   = document.getElementById('notesBody');
 const tripNotes   = document.getElementById('tripNotes');
 function setNotesOpen(open) {
-  notesBody.classList.toggle('open', open);
+  notesBody.classList.toggle('is-open', open);
   notesToggle.setAttribute('aria-expanded', String(open));
   document.getElementById('notesArrow').setAttribute('points', open ? '18 9 12 15 6 9' : '9 18 15 12 9 6');
 }
 notesToggle.addEventListener('click', () => {
-  const open = !notesBody.classList.contains('open');
+  const open = !notesBody.classList.contains('is-open');
   setNotesOpen(open);
   store.set('tripNotesOpen', open);
 });
@@ -427,13 +427,13 @@ async function fetchWeather() {
     else if (precip >= 40 || wind >= 20) { verdict = 'Caution'; cls = 'weather-warn'; icon = '[!]'; }
     else { verdict = 'Go'; cls = 'weather-go'; icon = '[OK]'; }
     weatherResult.innerHTML = `<span class="${cls}">${esc(icon)} ${esc(verdict)}</span> - ${esc(name)}, ${esc((country_code || '').toUpperCase())}<span class="weather-detail">High ${esc(high)}F · Low ${esc(low)}F · Precip ${esc(precip)}% · Wind ${esc(wind)} mph</span>`;
-    weatherResult.classList.add('visible');
+    weatherResult.classList.add('is-visible');
     window.TK.runtimeState.weatherStatus = verdict.toLowerCase() === 'go' ? 'ready' : 'alert';
     window.TK.runtimeState.weatherMessage = verdict;
     updatePrefs({ lastWeatherVerdict: verdict.toLowerCase() });
   } catch {
     weatherResult.innerHTML = `<span class="weather-danger">${esc('Location not found - try a different city name.')}</span>`;
-    weatherResult.classList.add('visible');
+    weatherResult.classList.add('is-visible');
     window.TK.runtimeState.weatherStatus = 'error';
     window.TK.runtimeState.weatherMessage = 'Location not found. Try another city or zip code.';
   } finally {
@@ -604,7 +604,7 @@ function openModal() {
     '';
   if (suggestedTrail) document.getElementById('logTrail').value = suggestedTrail;
   document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-  logModal.classList.add('open');
+  logModal.classList.add('is-open');
   window.TK.runtimeState.hikeModalOpen = true;
   pageEl.setAttribute('aria-hidden', 'true');
   renderAdaptiveStates();
@@ -615,8 +615,8 @@ function openModal() {
 }
 
 function closeModal() {
-  if (!logModal.classList.contains('open')) return;
-  logModal.classList.remove('open');
+  if (!logModal.classList.contains('is-open')) return;
+  logModal.classList.remove('is-open');
   window.TK.runtimeState.hikeModalOpen = false;
   pageEl.removeAttribute('aria-hidden');
   document.getElementById('logTrail').value = '';
@@ -624,7 +624,7 @@ function closeModal() {
   document.getElementById('logMiles').value = '';
   document.getElementById('logElevation').value = '';
   selectedRating = 0;
-  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.rating-star').forEach(s => s.classList.remove('is-active'));
   if (previouslyFocused) { previouslyFocused.focus(); previouslyFocused = null; }
   renderAdaptiveStates();
 }
@@ -636,7 +636,7 @@ logModal.addEventListener('keydown', e => {
     document.getElementById('logSave').click();
     return;
   }
-  if (!logModal.classList.contains('open') || e.key !== 'Tab') return;
+  if (!logModal.classList.contains('is-open') || e.key !== 'Tab') return;
   const focusable = getModalFocusable();
   if (!focusable.length) return;
   const first = focusable[0];
@@ -651,7 +651,7 @@ logModal.addEventListener('keydown', e => {
 document.getElementById('openLogModal').addEventListener('click', openModal);
 document.getElementById('logCancel').addEventListener('click', closeModal);
 logModal.addEventListener('click', e => e.target === e.currentTarget && closeModal());
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && logModal.classList.contains('open')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && logModal.classList.contains('is-open')) closeModal(); });
 
 function isTypingTarget(el) {
   if (!el) return false;
@@ -659,7 +659,7 @@ function isTypingTarget(el) {
 }
 
 document.addEventListener('keydown', e => {
-  if (isTypingTarget(document.activeElement) || logModal.classList.contains('open')) return;
+  if (isTypingTarget(document.activeElement) || logModal.classList.contains('is-open')) return;
   const key = e.key.toLowerCase();
   if (e.key === '/') {
     e.preventDefault();
@@ -698,7 +698,7 @@ document.getElementById('logSave').addEventListener('click', () => {
 document.querySelectorAll('.rating-star').forEach(btn => {
   btn.addEventListener('click', () => {
     selectedRating = +btn.dataset.val;
-    document.querySelectorAll('.rating-star').forEach((s,i) => s.classList.toggle('active', i < selectedRating));
+    document.querySelectorAll('.rating-star').forEach((s,i) => s.classList.toggle('is-active', i < selectedRating));
   });
 });
 

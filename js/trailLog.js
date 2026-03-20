@@ -147,9 +147,9 @@
       pill.textContent = c.icon + ' ' + c.label;
       pill.addEventListener('click', function () {
         condRow.querySelectorAll('.trail-log-condition').forEach(function (p) {
-          p.classList.remove('active');
+          p.classList.remove('is-active');
         });
-        pill.classList.add('active');
+        pill.classList.add('is-active');
       });
       condRow.appendChild(pill);
     });

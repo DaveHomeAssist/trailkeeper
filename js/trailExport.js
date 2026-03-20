@@ -19,7 +19,7 @@
 
   function readWeather() {
     var el = document.getElementById('weatherResult');
-    if (!el || !el.classList.contains('visible')) return '';
+    if (!el || !el.classList.contains('is-visible')) return '';
     var text = (el.textContent || '').trim();
     return text || '';
   }

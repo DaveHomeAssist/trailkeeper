@@ -240,7 +240,7 @@ body::before {
 .weather-input { flex: 1; min-width: 120px; font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 12px; border: 1px solid var(--mist); border-radius: 6px; background: var(--paper); outline: none; transition: border-color 0.15s; min-height: 44px; color: var(--ink); }
 .weather-input:focus { border-color: var(--fern); }
 .weather-result { margin-top: 12px; padding: 12px 14px; background: var(--cream); border-radius: 8px; font-size: 13px; line-height: 1.7; display: none; }
-.weather-result.visible { display: block; animation: fadeIn 0.3s ease; }
+.weather-result.is-visible { display: block; animation: fadeIn 0.3s ease; }
 .weather-go   { color: var(--success); font-weight: 600; }
 .weather-warn { color: var(--warn); font-weight: 600; }
 .weather-no   { color: var(--danger); font-weight: 600; }
@@ -272,7 +272,7 @@ body::before {
 .trip-notes-toggle { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--stone); padding: 10px 0; display: flex; align-items: center; gap: 6px; transition: color 0.15s; letter-spacing: 0.06em; text-transform: uppercase; min-height: 44px; }
 .trip-notes-toggle:hover { color: var(--fern); }
 .trip-notes-body { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--cream); }
-.trip-notes-body.open { display: block; animation: slideUp 0.2s ease; }
+.trip-notes-body.is-open { display: block; animation: slideUp 0.2s ease; }
 .trip-notes-textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 300; color: var(--ink); border: none; outline: none; background: transparent; resize: none; line-height: 1.7; min-height: 80px; padding: 4px; border-radius: 3px; transition: background 0.15s; }
 .trip-notes-textarea:focus { background: var(--cream); }
 .trip-notes-textarea::placeholder { color: var(--mist); font-style: italic; }
@@ -292,7 +292,7 @@ body::before {
 
 /* ── MODAL ── */
 .modal-backdrop { position: fixed; inset: 0; background: var(--modal-backdrop); z-index: var(--z-modal); display: none; align-items: center; justify-content: center; padding: 24px; }
-.modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+.modal-backdrop.is-open { display: flex; animation: fadeIn 0.2s ease; }
 .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.18); animation: slideUp 0.25s ease; }
 .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 24px; }
 .modal-field { margin-bottom: 16px; }
@@ -304,7 +304,7 @@ body::before {
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 .modal-rating { display: flex; gap: 4px; }
 .rating-star { font-size: 22px; cursor: pointer; color: var(--mist); background: none; border: none; padding: 4px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: color 0.1s, transform 0.1s; }
-.rating-star:hover, .rating-star.active { color: var(--amber); transform: scale(1.2); }
+.rating-star:hover, .rating-star.is-active { color: var(--amber); transform: scale(1.2); }
 
 /* ── LINKS ── */
 .links-list { list-style: none; display: grid; gap: 2px; }
@@ -678,7 +678,7 @@ body::before {
   transition: opacity 0.2s, transform 0.2s;
 }
 .back-to-top:hover { border-color: var(--fern); color: var(--fern); }
-.back-to-top.visible {
+.back-to-top.is-visible {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -875,7 +875,7 @@ body::before {
   border-color: var(--fern);
   color: var(--fern);
 }
-.trail-log-condition.active {
+.trail-log-condition.is-active {
   border-color: var(--fern);
   background: var(--fern);
   color: white;
