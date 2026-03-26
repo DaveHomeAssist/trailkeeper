@@ -1,6 +1,4 @@
-> **DEPRECATED** — This file is superseded by `CLAUDE.md`. Issues, session log, and project metadata now live in CLAUDE.md. This file is retained as a historical archive only.
-
-# AGENTS.md
+# CLAUDE.md
 
 Inherits root rules from `/Users/daverobertson/Desktop/Code/AGENTS.md`.
 
@@ -22,6 +20,11 @@ Trailkeeper is a local first hiking log and field dashboard. It supports plannin
 - Use direct browser storage instead of a backend
 - Keep hiking workflows organized around one dashboard instead of multi page navigation
 
+## Documentation Maintenance
+
+- **Issues**: Track in the issue tracker table below
+- **Session log**: Append to `/Users/daverobertson/Desktop/Code/95-docs-personal/today.csv` after each meaningful change
+
 ## Issue Tracker
 
 | ID | Severity | Status | Title | Notes |
@@ -37,4 +40,3 @@ Trailkeeper is a local first hiking log and field dashboard. It supports plannin
 ## Session Log
 
 [2026-03-18] [Trailkeeper] [docs] Add AGENTS baseline
-
