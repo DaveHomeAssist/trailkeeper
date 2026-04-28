@@ -300,6 +300,7 @@ body::before {
 .modal-input, .modal-textarea { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 14px; border: 1.5px solid var(--mist); border-radius: 8px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; min-height: 44px; }
 .modal-input:focus, .modal-textarea:focus { border-color: var(--fern); }
 .modal-textarea { min-height: 80px; resize: none; line-height: 1.6; }
+.modal-new-trail { margin-top: 8px; }
 .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 .modal-rating { display: flex; gap: 4px; }
@@ -644,6 +645,134 @@ body::before {
 .log-entry:hover .log-entry-header .copy-btn,
 .log-entry-header .copy-btn:focus-visible { opacity: 1; }
 
+/* ── TRAIL LIBRARY ── */
+.trail-library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.trail-library-card {
+  background: var(--surface);
+  border: 1px solid rgba(200,194,160,0.12);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+.trail-library-card.is-selected {
+  border-color: var(--fern);
+  box-shadow: 0 2px 12px var(--shadow-moss);
+}
+.trail-library-topline,
+.trail-library-metrics,
+.trail-library-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.trail-library-status,
+.trail-library-last,
+.trail-library-metrics span,
+.trail-library-tags span {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--stone);
+  background: var(--cream);
+  border-radius: 3px;
+  padding: 4px 6px;
+  text-transform: uppercase;
+}
+.trail-library-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.trail-library-location,
+.trail-library-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--stone);
+}
+.trail-card-open {
+  justify-content: center;
+  margin-top: 4px;
+}
+.trail-detail {
+  background: var(--surface);
+  border: 1px solid var(--mist);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+}
+.trail-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.trail-detail-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.trail-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.trail-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.trail-detail-wide {
+  grid-column: 1 / -1;
+}
+.trail-detail-block {
+  border-top: 1px solid var(--cream);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.trail-detail-subtitle {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-bottom: 8px;
+}
+.trail-detail-row {
+  display: grid;
+  grid-template-columns: 96px 80px 1fr;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cream);
+  font-size: 13px;
+  color: var(--stone);
+}
+.trail-detail-row strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.trail-detail-empty {
+  color: var(--mist);
+  font-style: italic;
+  font-size: 13px;
+}
+.trail-detail-link {
+  display: inline-flex;
+  color: var(--fern);
+  font-size: 13px;
+  margin: 0 10px 8px 0;
+  overflow-wrap: anywhere;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px;
@@ -757,6 +886,23 @@ body::before {
   .trail-add-select,
   .trail-add-row .btn {
     width: 100%;
+  }
+  .trail-library-grid,
+  .trail-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .trail-detail-header {
+    display: grid;
+  }
+  .trail-detail-actions {
+    justify-content: stretch;
+  }
+  .trail-detail-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .trail-detail-row {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 600px) {

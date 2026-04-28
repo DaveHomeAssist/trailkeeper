@@ -142,7 +142,8 @@ function normalizeHikeLog(value) {
   return value.map(function (entry) {
     if (!entry || typeof entry !== 'object') return null;
     var trail = typeof entry.trail === 'string' ? entry.trail.trim() : '';
-    if (!trail) return null;
+    var trailId = typeof entry.trailId === 'string' ? entry.trailId.trim() : '';
+    if (!trail && !trailId) return null;
     var rating = Number.isFinite(Number(entry.rating))
       ? Math.min(5, Math.max(0, Math.round(Number(entry.rating))))
       : 0;
@@ -152,9 +153,12 @@ function normalizeHikeLog(value) {
     var elevation = Number.isFinite(elevationNumber) && elevationNumber >= 0 ? String(entry.elevation) : '';
     return Object.assign({}, entry, {
       trail: trail,
+      trailId: trailId,
+      trailNameSnapshot: typeof entry.trailNameSnapshot === 'string' ? entry.trailNameSnapshot : trail,
       date: typeof entry.date === 'string' ? entry.date : '',
       miles: miles,
       elevation: elevation,
+      elevationFeet: entry.elevationFeet == null ? (elevation ? Number(elevation) : null) : entry.elevationFeet,
       note: typeof entry.note === 'string' ? entry.note : '',
       rating: rating
     });
@@ -168,11 +172,157 @@ function normalizeStringList(value) {
   }).filter(Boolean);
 }
 
-let trails = normalizeTrailList(store.get('tk-trails', []));
-let hikeLog = normalizeHikeLog(store.get('hikeLog', []));
-let customGear = normalizeStringList(store.get('customGear', []));
-let checkedGear = normalizeStringList(store.get('checkedGear', []));
+let tkData = window.TK.storage ? window.TK.storage.load() : null;
+let trails = tkData ? window.TK.storage.active(tkData.trails) : normalizeTrailList(store.get('tk-trails', []));
+let hikeLog = tkData ? window.TK.storage.active(tkData.hikeLogs) : normalizeHikeLog(store.get('hikeLog', []));
+let customGear = tkData ? window.TK.storage.active(tkData.gearItems).filter(item => !item.defaultItem).map(item => item.name) : normalizeStringList(store.get('customGear', []));
+let checkedGear = tkData ? window.TK.storage.active(tkData.gearItems).map((item, index) => item.packed ? (item.defaultItem ? 'default_' + index : 'custom_' + customGear.findIndex(name => name === item.name)) : '').filter(Boolean).filter(key => !key.endsWith('_-1')) : normalizeStringList(store.get('checkedGear', []));
 let selectedRating = 0;
+let selectedTrailId = '';
+
+function refreshFromData() {
+  if (!window.TK.storage) return;
+  tkData = window.TK.storage.load();
+  trails = window.TK.storage.active(tkData.trails);
+  hikeLog = window.TK.storage.active(tkData.hikeLogs);
+}
+
+function saveData() {
+  if (!window.TK.storage) return;
+  try {
+    const deletedTrails = (tkData.trails || []).filter(record => record && record.deletedAt && !trails.some(active => active.id === record.id));
+    const deletedLogs = (tkData.hikeLogs || []).filter(record => record && record.deletedAt && !hikeLog.some(active => active.id === record.id));
+    tkData.trails = trails.concat(deletedTrails);
+    tkData.hikeLogs = hikeLog.concat(deletedLogs);
+    tkData = window.TK.storage.save(tkData);
+    trails = window.TK.storage.active(tkData.trails);
+    hikeLog = window.TK.storage.active(tkData.hikeLogs);
+  } catch (_) {
+    window.TK.runtimeState.storageError = 'Browser storage is unavailable. Keep a backup before leaving this page.';
+    renderAdaptiveStates();
+  }
+}
+
+function findTrailById(trailId) {
+  return trails.find(trail => trail && trail.id === trailId) || null;
+}
+
+function findTrailName(trailId, fallback) {
+  const trail = findTrailById(trailId);
+  return trail ? trail.name : (fallback || '');
+}
+
+function getLastHiked(trailId) {
+  const logs = hikeLog.filter(log => log && log.trailId === trailId && !log.deletedAt);
+  logs.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return logs[0] ? logs[0].date : '';
+}
+
+function syncGearData() {
+  if (!window.TK.storage || !tkData) return;
+  const defaultLabels = [...document.querySelectorAll('#checklist .check-item:not(.custom) label')].map(label => label.textContent.trim());
+  const existing = tkData.gearItems || [];
+  const nextItems = [];
+  defaultLabels.forEach((name, index) => {
+    let item = existing.find(record => record && record.defaultItem && record.name === name);
+    if (!item) {
+      item = { id: window.TK.storage.makeId('gear'), name, category: 'Essentials', defaultItem: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deletedAt: null };
+    }
+    item.packed = checkedGear.includes('default_' + index);
+    window.TK.storage.touch(item);
+    nextItems.push(item);
+  });
+  customGear.forEach((name, index) => {
+    let item = existing.find(record => record && !record.defaultItem && record.name === name && !record.deletedAt);
+    if (!item) {
+      item = { id: window.TK.storage.makeId('gear'), name, category: 'Custom', defaultItem: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deletedAt: null };
+    }
+    item.packed = checkedGear.includes('custom_' + index);
+    window.TK.storage.touch(item);
+    nextItems.push(item);
+  });
+  const deleted = existing.filter(record => record && record.deletedAt);
+  tkData.gearItems = nextItems.concat(deleted);
+  tkData.gearKits = [{
+    id: (tkData.gearKits && tkData.gearKits[0] && tkData.gearKits[0].id) || window.TK.storage.makeId('kit'),
+    name: 'Pack Checklist',
+    itemIds: nextItems.map(item => item.id),
+    notes: '',
+    createdAt: (tkData.gearKits && tkData.gearKits[0] && tkData.gearKits[0].createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    deletedAt: null
+  }];
+  tkData = window.TK.storage.save(tkData);
+}
+
+function syncPlanningData() {
+  if (!window.TK.storage || !tkData) return;
+  const name = (document.getElementById('planTrail')?.textContent || '').trim();
+  const trail = name ? window.TK.storage.upsertTrailByName(tkData, name, { status: 'planned', category: 'Planned', tags: ['Planned'] }) : null;
+  const existing = (tkData.tripPlans || []).find(plan => plan && !plan.deletedAt && plan.date === new Date().toISOString().split('T')[0]);
+  const plan = existing || {
+    id: window.TK.storage.makeId('plan'),
+    createdAt: new Date().toISOString(),
+    deletedAt: null
+  };
+  plan.trailId = trail ? trail.id : '';
+  plan.date = new Date().toISOString().split('T')[0];
+  plan.startTime = store.get('planTime', '');
+  plan.notes = store.get('tripNotes', '');
+  plan.weatherSummary = store.get('weatherCity', '');
+  plan.packList = ['water', 'snacks', 'layers', 'headlamp', 'first aid'];
+  plan.status = trail ? 'planned' : 'draft';
+  plan.updatedAt = new Date().toISOString();
+  if (!existing) tkData.tripPlans = (tkData.tripPlans || []).concat(plan);
+  tkData = window.TK.storage.save(tkData);
+  trails = window.TK.storage.active(tkData.trails);
+}
+
+function syncFieldNotesData() {
+  if (!window.TK.storage || !tkData) return;
+  const terrain = document.getElementById('condTerrain')?.value.trim() || '';
+  const access = document.getElementById('condAccess')?.value.trim() || '';
+  const existing = tkData.fieldNotes || [];
+  const next = existing.filter(note => note && note.deletedAt);
+  [
+    { type: 'terrain', title: 'Terrain', body: terrain },
+    { type: 'access', title: 'Access', body: access }
+  ].forEach(item => {
+    if (!item.body) return;
+    let note = existing.find(record => record && !record.deletedAt && record.type === item.type);
+    if (!note) {
+      note = { id: window.TK.storage.makeId('note'), createdAt: new Date().toISOString(), deletedAt: null };
+    }
+    note.type = item.type;
+    note.title = item.title;
+    note.body = item.body;
+    note.updatedAt = new Date().toISOString();
+    next.push(note);
+  });
+  tkData.fieldNotes = next;
+  tkData = window.TK.storage.save(tkData);
+}
+
+function syncPhotoRecords() {
+  if (!window.TK.storage || !tkData) return;
+  const existing = tkData.photoRecords || [];
+  const now = new Date().toISOString();
+  tkData.photoRecords = PHOTO_KEYS.map((slotKey, index) => {
+    const current = existing.find(photo => photo && photo.slotKey === slotKey);
+    return {
+      id: current && current.id ? current.id : window.TK.storage.makeId('photo'),
+      slotKey,
+      trailId: current && current.trailId ? current.trailId : '',
+      hikeLogId: current && current.hikeLogId ? current.hikeLogId : '',
+      caption: current && current.caption ? current.caption : '',
+      storage: 'indexedDB',
+      createdAt: current && current.createdAt ? current.createdAt : now,
+      updatedAt: now,
+      deletedAt: null
+    };
+  }).concat(existing.filter(photo => photo && photo.deletedAt));
+  tkData = window.TK.storage.save(tkData);
+}
 
 function setupTwoClickConfirm(button, onConfirm, confirmText = 'Sure?') {
   let armed = false;
@@ -362,7 +512,7 @@ function renderAdaptiveStates() {
   } else if (window.TK.runtimeState.hikeModalOpen) {
     ensureSectionState('sec-record', 'active', 'Logging in progress', 'Finish the current hike entry to update stats and the trail summary.');
   } else if (latestLog && latestLog.date === today) {
-    ensureSectionState('sec-record', 'complete', 'Today’s hike is logged', 'Latest entry: ' + latestLog.trail + '. Add photos or refine the note while details are fresh.');
+    ensureSectionState('sec-record', 'complete', 'Today’s hike is logged', 'Latest entry: ' + findTrailName(latestLog.trailId, latestLog.trailNameSnapshot) + '. Add photos or refine the note while details are fresh.');
   } else if (plannedTrailText) {
     ensureSectionState('sec-record', 'active', 'Ready to log', 'Today’s trail is selected. Log the hike when you return to capture miles, elevation, and notes.');
   } else {
@@ -431,6 +581,7 @@ document.querySelectorAll('[data-key]').forEach(el => {
     var nextValue = el.textContent.trim();
     store.set(key, nextValue);
     if (key === 'planTrail') updatePrefs({ lastPlannedTrail: nextValue });
+    if (key === 'planTrail' || key === 'planTime') syncPlanningData();
     renderAdaptiveStates();
   });
 });
@@ -451,7 +602,10 @@ notesToggle.addEventListener('click', () => {
 });
 setNotesOpen(Boolean(store.get('tripNotesOpen', false)));
 tripNotes.value = store.get('tripNotes', '');
-tripNotes.addEventListener('input', () => store.set('tripNotes', tripNotes.value));
+tripNotes.addEventListener('input', () => {
+  store.set('tripNotes', tripNotes.value);
+  syncPlanningData();
+});
 
 /* ── WEATHER ── */
 const weatherBtn    = document.getElementById('weatherFetch');
@@ -474,6 +628,7 @@ async function fetchWeather() {
     return;
   }
   store.set('weatherCity', city);
+  syncPlanningData();
   updatePrefs({ lastWeatherCity: city });
   weatherBtn.textContent = '...';
   weatherBtn.disabled = true;
@@ -559,6 +714,7 @@ function renderTrails() {
       <span class="trail-tag">${esc(safeCategory)}</span>
       <span class="trail-name${safeStatus==='done'?' done':''}">${esc(t.name)}</span>
       <button class="trail-set-today btn" aria-label="Set as today's trail">\u2192 Today</button>
+      <button class="trail-detail-open btn" aria-label="View ${esc(t.name)} detail">Detail</button>
       <button class="trail-status ${safeStatus}" aria-label="Status: ${safeStatusLabel}">${safeStatusLabel}</button>
       <button class="trail-delete" aria-label="Remove ${esc(t.name)}">\u2715</button>`;
     li.querySelector('.trail-set-today').addEventListener('click', () => {
@@ -566,21 +722,29 @@ function renderTrails() {
       el.textContent = t.name;
       store.set('planTrail', t.name);
       updatePrefs({ lastPlannedTrail: t.name });
+      syncPlanningData();
       renderAdaptiveStates();
       toast(`"${t.name}" set as today's trail`, 'success');
+    });
+    li.querySelector('.trail-detail-open').addEventListener('click', () => {
+      selectedTrailId = t.id;
+      renderTrailLibrary();
+      document.getElementById('sec-library').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     li.querySelector('.trail-status').addEventListener('click', () => {
       const statusTrailName = t.name;
       const previousStatus = trails[i].status;
       const nextStatus = STATUSES[(STATUSES.indexOf(safeStatus) + 1) % STATUSES.length];
       trails[i].status = nextStatus;
-      store.set('tk-trails', trails);
+      if (window.TK.storage) window.TK.storage.touch(trails[i]);
+      saveData();
       renderTrails();
       showUndoToast(`Status changed to ${SLABELS[nextStatus]}`, () => {
         const targetIndex = trails.findIndex((trail) => trail && trail.name === statusTrailName);
         if (targetIndex < 0) return;
         trails[targetIndex].status = previousStatus;
-        store.set('tk-trails', trails);
+        if (window.TK.storage) window.TK.storage.touch(trails[targetIndex]);
+        saveData();
         renderTrails();
         toast('Status restored', 'success');
       });
@@ -588,20 +752,22 @@ function renderTrails() {
     li.querySelector('.trail-delete').addEventListener('click', () => {
       const prevTrails = deepClone(trails);
       const removedName = t.name;
-      trails.splice(i, 1);
-      store.set('tk-trails', trails);
+      if (window.TK.storage) window.TK.storage.softDelete(trails[i]);
+      else trails.splice(i, 1);
+      saveData();
       renderTrails();
       toast('Trail removed');
       showUndoToast(`Removed "${removedName}"`, () => {
         trails = prevTrails;
-        store.set('tk-trails', trails);
+        saveData();
         renderTrails();
         toast('Trail restored', 'success');
       });
     });
     list.appendChild(li);
   });
-  if (statusUpdated) store.set('tk-trails', trails);
+  if (statusUpdated) saveData();
+  renderTrailLibrary();
   renderAdaptiveStates();
 }
 
@@ -617,13 +783,143 @@ function addTrail() {
     toast('Trail already in shortlist');
     return;
   }
-  trails.push({ name, category: document.getElementById('trailCategory').value, status: 'unvisited' });
-  store.set('tk-trails', trails);
+  const category = document.getElementById('trailCategory').value;
+  if (window.TK.storage) {
+    window.TK.storage.upsertTrailByName(tkData, name, { category, tags: [category], status: 'unvisited' });
+    trails = window.TK.storage.active(tkData.trails);
+    saveData();
+  } else {
+    trails.push({ name, category, status: 'unvisited' });
+    store.set('tk-trails', trails);
+  }
   document.getElementById('trailInput').value = '';
   renderTrails();
   updatePrefs({ lastPlannedTrail: name });
   toast(`"${name}" added`, 'success');
 }
+
+function renderTrailLibrary() {
+  const library = document.getElementById('trailLibrary');
+  const detail = document.getElementById('trailDetail');
+  if (!library || !detail) return;
+  library.innerHTML = '';
+  const visibleTrails = trails.filter(trail => trail && !trail.deletedAt);
+  if (!visibleTrails.length) {
+    library.innerHTML = '<div class="empty-state"><span class="empty-state-icon" aria-hidden="true">+</span><div class="empty-state-title">No trail records</div><div class="empty-state-hint">Add a trail or create one from the hike log form.</div></div>';
+  } else {
+    visibleTrails.forEach(trail => {
+      const enrich = trail.enrichment && trail.enrichment.fields ? trail.enrichment.fields : {};
+      const distance = trail.distanceMiles != null ? trail.distanceMiles + ' mi' : enrich.distance_km != null ? (Number(enrich.distance_km) * 0.621371).toFixed(1) + ' mi' : 'Distance open';
+      const elevation = trail.elevationFeet != null ? Number(trail.elevationFeet).toLocaleString() + ' ft' : enrich.elevation_gain_m != null ? Math.round(Number(enrich.elevation_gain_m) * 3.28084).toLocaleString() + ' ft' : 'Elev open';
+      const difficulty = trail.difficulty || enrich.difficulty || 'Difficulty open';
+      const lastHiked = getLastHiked(trail.id);
+      const card = document.createElement('article');
+      card.className = 'trail-library-card' + (trail.id === selectedTrailId ? ' is-selected' : '');
+      card.innerHTML = `
+        <div class="trail-library-topline">
+          <span class="trail-library-status">${esc(trail.status || 'unvisited')}</span>
+          <span class="trail-library-last">${esc(lastHiked ? 'Last ' + lastHiked : 'Not hiked')}</span>
+        </div>
+        <h3 class="trail-library-name">${esc(trail.name)}</h3>
+        <div class="trail-library-location">${esc(trail.location || 'Location open')}</div>
+        <div class="trail-library-metrics">
+          <span>${esc(distance)}</span>
+          <span>${esc(elevation)}</span>
+          <span>${esc(difficulty)}</span>
+        </div>
+        <div class="trail-library-tags">${(trail.tags || []).map(tag => '<span>' + esc(tag) + '</span>').join('') || '<span>untagged</span>'}</div>
+        <div class="trail-library-note">${esc(trail.nextTimeNote || 'No next time note yet')}</div>
+        <button class="btn btn-ghost trail-card-open" type="button">Open detail</button>`;
+      card.querySelector('.trail-card-open').addEventListener('click', () => {
+        selectedTrailId = trail.id;
+        renderTrailLibrary();
+      });
+      library.appendChild(card);
+    });
+  }
+  renderTrailDetail();
+}
+
+function renderTrailDetail() {
+  const detail = document.getElementById('trailDetail');
+  if (!detail) return;
+  const trail = selectedTrailId ? findTrailById(selectedTrailId) : null;
+  if (!trail) {
+    detail.hidden = true;
+    detail.innerHTML = '';
+    return;
+  }
+  detail.hidden = false;
+  const logs = hikeLog.filter(log => log.trailId === trail.id && !log.deletedAt).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const plans = (tkData.tripPlans || []).filter(plan => plan && !plan.deletedAt && plan.trailId === trail.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const links = (trail.links || []).filter(link => link.label || link.url);
+  detail.innerHTML = `
+    <div class="trail-detail-header">
+      <div>
+        <div class="section-label">Trail Detail</div>
+        <h3 class="trail-detail-title">${esc(trail.name)}</h3>
+      </div>
+      <div class="trail-detail-actions">
+        <button class="btn btn-primary" id="detailLogTrail" type="button">Log hike</button>
+        <button class="btn btn-ghost" id="detailSetToday" type="button">Today</button>
+      </div>
+    </div>
+    <div class="trail-detail-grid">
+      <label class="modal-field"><span class="modal-label">Location</span><input class="modal-input" id="detailLocation" value="${esc(trail.location || '')}" placeholder="Town, park, region"></label>
+      <label class="modal-field"><span class="modal-label">Distance miles</span><input class="modal-input" id="detailDistance" type="number" step="0.1" min="0" value="${trail.distanceMiles == null ? '' : esc(trail.distanceMiles)}"></label>
+      <label class="modal-field"><span class="modal-label">Elevation feet</span><input class="modal-input" id="detailElevation" type="number" min="0" value="${trail.elevationFeet == null ? '' : esc(trail.elevationFeet)}"></label>
+      <label class="modal-field"><span class="modal-label">Difficulty</span><input class="modal-input" id="detailDifficulty" value="${esc(trail.difficulty || '')}" placeholder="Easy, moderate, hard"></label>
+      <label class="modal-field trail-detail-wide"><span class="modal-label">Tags</span><input class="modal-input" id="detailTags" value="${esc((trail.tags || []).join(', '))}" placeholder="ridge, lake, winter"></label>
+      <label class="modal-field trail-detail-wide"><span class="modal-label">Next time note</span><textarea class="modal-textarea" id="detailNext">${esc(trail.nextTimeNote || '')}</textarea></label>
+      <label class="modal-field trail-detail-wide"><span class="modal-label">Notes</span><textarea class="modal-textarea" id="detailNotes">${esc(trail.notes || '')}</textarea></label>
+    </div>
+    <div class="trail-detail-block">
+      <div class="trail-detail-subtitle">Links</div>
+      ${links.length ? links.map(link => '<a class="trail-detail-link" href="' + esc(link.url) + '" target="_blank" rel="noopener">' + esc(link.label || link.url) + '</a>').join('') : '<div class="trail-detail-empty">No trail links saved.</div>'}
+    </div>
+    <div class="trail-detail-block">
+      <div class="trail-detail-subtitle">Hike History</div>
+      ${logs.length ? logs.map(log => '<div class="trail-detail-row"><strong>' + esc(log.date || '') + '</strong><span>' + esc(log.miles == null ? '' : log.miles + ' mi') + '</span><span>' + esc(log.note || '') + '</span></div>').join('') : '<div class="trail-detail-empty">No hikes logged for this trail.</div>'}
+    </div>
+    <div class="trail-detail-block">
+      <div class="trail-detail-subtitle">Planned Hikes</div>
+      ${plans.length ? plans.map(plan => '<div class="trail-detail-row"><strong>' + esc(plan.date || '') + '</strong><span>' + esc(plan.startTime || '') + '</span><span>' + esc(plan.notes || plan.status || '') + '</span></div>').join('') : '<div class="trail-detail-empty">No planned hikes for this trail.</div>'}
+    </div>`;
+
+  ['detailLocation', 'detailDistance', 'detailElevation', 'detailDifficulty', 'detailTags', 'detailNext', 'detailNotes'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      const currentTrail = (tkData.trails || []).find(record => record && record.id === trail.id) || trail;
+      currentTrail.location = document.getElementById('detailLocation').value.trim();
+      currentTrail.distanceMiles = document.getElementById('detailDistance').value ? Number(document.getElementById('detailDistance').value) : null;
+      currentTrail.elevationFeet = document.getElementById('detailElevation').value ? Number(document.getElementById('detailElevation').value) : null;
+      currentTrail.difficulty = document.getElementById('detailDifficulty').value.trim();
+      currentTrail.tags = document.getElementById('detailTags').value.split(',').map(tag => tag.trim()).filter(Boolean);
+      currentTrail.category = currentTrail.tags[0] || currentTrail.category || 'Quick';
+      currentTrail.nextTimeNote = document.getElementById('detailNext').value.trim();
+      currentTrail.notes = document.getElementById('detailNotes').value.trim();
+      if (window.TK.storage) window.TK.storage.touch(currentTrail);
+      trails = window.TK.storage.active(tkData.trails);
+      saveData();
+    });
+  });
+
+  document.getElementById('detailLogTrail').addEventListener('click', () => openModal(trail.id));
+  document.getElementById('detailSetToday').addEventListener('click', () => {
+    const el = document.getElementById('planTrail');
+    el.textContent = trail.name;
+    store.set('planTrail', trail.name);
+    updatePrefs({ lastPlannedTrail: trail.name });
+    syncPlanningData();
+    renderAdaptiveStates();
+    toast(`"${trail.name}" set as today's trail`, 'success');
+  });
+}
+
+document.getElementById('clearTrailDetail').addEventListener('click', () => {
+  selectedTrailId = '';
+  renderTrailLibrary();
+});
 renderTrails();
 
 /* ── HIKE LOG ── */
@@ -645,45 +941,49 @@ function renderLog() {
       const li = document.createElement('li');
       li.className = 'log-entry';
       const safeRating = Number.isFinite(Number(h.rating)) ? Math.min(5, Math.max(0, Math.round(Number(h.rating)))) : 0;
+      const trailName = findTrailName(h.trailId, h.trailNameSnapshot || h.trail);
       const stars = safeRating ? `<span class="log-stars">${'\u2605'.repeat(safeRating)}${'\u2606'.repeat(5 - safeRating)}</span>` : '';
-      const milesText = h.miles ? ` \u00B7 ${esc(h.miles)} mi` : '';
-      const elevationValue = h.elevation ? Number(h.elevation) : NaN;
-      const elevationText = h.elevation
-        ? ` \u00B7 ${Number.isFinite(elevationValue) ? esc(elevationValue.toLocaleString()) : esc(h.elevation)} ft`
+      const milesText = h.miles != null ? ` \u00B7 ${esc(h.miles)} mi` : '';
+      const elevation = h.elevationFeet != null ? h.elevationFeet : h.elevation;
+      const elevationValue = elevation ? Number(elevation) : NaN;
+      const elevationText = elevation
+        ? ` \u00B7 ${Number.isFinite(elevationValue) ? esc(elevationValue.toLocaleString()) : esc(elevation)} ft`
         : '';
       li.innerHTML = `
         <div>
-          <div class="log-entry-header"><span class="log-entry-name">${esc(h.trail)}</span><button class="copy-btn" aria-label="Copy trail name">Copy</button></div>
+          <div class="log-entry-header"><span class="log-entry-name">${esc(trailName)}</span><button class="copy-btn" aria-label="Copy trail name">Copy</button></div>
           <div class="log-entry-meta">${esc(h.date || '')}${milesText}${elevationText}${safeRating ? ' \u00B7 ' + stars : ''}</div>
           ${h.note ? `<div class="log-entry-note">${esc(h.note)}</div>` : ''}
         </div>
         <button class="btn btn-danger" aria-label="Delete entry">\u2715</button>`;
       li.querySelector('.btn-danger').addEventListener('click', () => {
         const prevLog = deepClone(hikeLog);
-        const removedTrailName = h.trail;
-        hikeLog.splice(i, 1);
-        store.set('hikeLog', hikeLog);
+        const removedTrailName = trailName;
+        if (window.TK.storage) window.TK.storage.softDelete(hikeLog[i]);
+        else hikeLog.splice(i, 1);
+        saveData();
         renderLog();
         toast('Entry removed');
         showUndoToast(`Removed "${removedTrailName}" log`, () => {
           hikeLog = prevLog;
-          store.set('hikeLog', hikeLog);
+          saveData();
           renderLog();
           toast('Entry restored', 'success');
         });
       });
       const logCopyBtn = li.querySelector('.copy-btn');
-      if (logCopyBtn) logCopyBtn.addEventListener('click', () => copyText(h.trail, logCopyBtn));
+      if (logCopyBtn) logCopyBtn.addEventListener('click', () => copyText(trailName, logCopyBtn));
       entries.appendChild(li);
     });
   }
   const miles = hikeLog.reduce((s, h) => s + (parseFloat(h.miles) || 0), 0);
-  const elev = hikeLog.reduce((s, h) => s + (parseInt(h.elevation) || 0), 0);
+  const elev = hikeLog.reduce((s, h) => s + (parseInt(h.elevationFeet != null ? h.elevationFeet : h.elevation) || 0), 0);
   const longest = hikeLog.reduce((m, h) => Math.max(m, parseFloat(h.miles) || 0), 0);
   document.getElementById('statHikes').textContent = hikeLog.length;
   document.getElementById('statMiles').textContent = miles.toFixed(1);
   document.getElementById('statElev').textContent = elev >= 1000 ? (elev / 1000).toFixed(1) + 'k' : elev;
   document.getElementById('statLongest').textContent = longest.toFixed(1);
+  renderTrailLibrary();
   renderAdaptiveStates();
 }
 
@@ -697,13 +997,45 @@ function getModalFocusable() {
     .filter(el => !el.hasAttribute('hidden'));
 }
 
-function openModal() {
+function populateTrailSelect(preferredTrailId) {
+  const select = document.getElementById('logTrailSelect');
+  if (!select) return;
+  select.innerHTML = '';
+  trails.forEach(trail => {
+    if (!trail || trail.deletedAt) return;
+    const option = document.createElement('option');
+    option.value = trail.id;
+    option.textContent = trail.name;
+    select.appendChild(option);
+  });
+  const createOption = document.createElement('option');
+  createOption.value = '__new';
+  createOption.textContent = 'Create new trail';
+  select.appendChild(createOption);
+  select.value = preferredTrailId && trails.some(trail => trail.id === preferredTrailId) ? preferredTrailId : (select.options[0] ? select.options[0].value : '__new');
+  const newInput = document.getElementById('logTrailNew');
+  newInput.hidden = select.value !== '__new';
+  newInput.toggleAttribute('required', select.value === '__new');
+}
+
+function openModal(preferredTrailId) {
   previouslyFocused = document.activeElement;
+  populateTrailSelect(preferredTrailId);
   const suggestedTrail =
     document.getElementById('planTrail').textContent.trim() ||
     (trails.find(t => t.status === 'planned') || trails[0] || {}).name ||
     '';
-  if (suggestedTrail) document.getElementById('logTrail').value = suggestedTrail;
+  if (!preferredTrailId && suggestedTrail) {
+    const found = trails.find(t => t.name.toLowerCase() === suggestedTrail.toLowerCase());
+    if (found) {
+      document.getElementById('logTrailSelect').value = found.id;
+      document.getElementById('logTrailNew').hidden = true;
+    } else {
+      document.getElementById('logTrailSelect').value = '__new';
+      document.getElementById('logTrailNew').hidden = false;
+      document.getElementById('logTrailNew').value = suggestedTrail;
+    }
+  }
   document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
   logModal.classList.add('is-open');
   window.TK.runtimeState.hikeModalOpen = true;
@@ -720,7 +1052,9 @@ function closeModal() {
   logModal.classList.remove('is-open');
   window.TK.runtimeState.hikeModalOpen = false;
   pageEl.removeAttribute('aria-hidden');
-  document.getElementById('logTrail').value = '';
+  document.getElementById('logTrailSelect').value = '';
+  document.getElementById('logTrailNew').value = '';
+  document.getElementById('logTrailNew').hidden = true;
   document.getElementById('logNote').value = '';
   document.getElementById('logMiles').value = '';
   document.getElementById('logElevation').value = '';
@@ -749,7 +1083,12 @@ logModal.addEventListener('keydown', e => {
   }
 });
 
-document.getElementById('openLogModal').addEventListener('click', openModal);
+document.getElementById('openLogModal').addEventListener('click', () => openModal());
+document.getElementById('logTrailSelect').addEventListener('change', () => {
+  const isNew = document.getElementById('logTrailSelect').value === '__new';
+  document.getElementById('logTrailNew').hidden = !isNew;
+  if (isNew) document.getElementById('logTrailNew').focus();
+});
 document.getElementById('logCancel').addEventListener('click', closeModal);
 logModal.addEventListener('click', e => e.target === e.currentTarget && closeModal());
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && logModal.classList.contains('is-open')) closeModal(); });
@@ -779,25 +1118,50 @@ document.addEventListener('keydown', e => {
 });
 
 document.getElementById('logSave').addEventListener('click', () => {
-  const trail = document.getElementById('logTrail').value.trim();
-  if (!trail) { document.getElementById('logTrail').focus(); return; }
+  const select = document.getElementById('logTrailSelect');
+  const newTrailInput = document.getElementById('logTrailNew');
+  let trailId = select.value;
+  let trailName = findTrailName(trailId, '');
+  if (trailId === '__new') {
+    trailName = newTrailInput.value.trim();
+    if (!trailName) { newTrailInput.focus(); return; }
+    const created = window.TK.storage ? window.TK.storage.upsertTrailByName(tkData, trailName, { category: 'Quick', tags: ['Quick'], status: 'done' }) : null;
+    if (created) {
+      trailId = created.id;
+      trails = window.TK.storage.active(tkData.trails);
+      saveData();
+    }
+  }
+  if (!trailId || trailId === '__new') { select.focus(); return; }
   const miles = document.getElementById('logMiles').value;
   const elevation = document.getElementById('logElevation').value;
   if (miles && Number(miles) < 0) { document.getElementById('logMiles').focus(); return; }
   if (elevation && Number(elevation) < 0) { document.getElementById('logElevation').focus(); return; }
+  const trail = findTrailById(trailId);
+  if (!trailName && trail) trailName = trail.name;
+  if (trail && trail.status !== 'done') {
+    trail.status = 'done';
+    if (window.TK.storage) window.TK.storage.touch(trail);
+  }
   hikeLog.push({
-    trail,
+    id: window.TK.storage ? window.TK.storage.makeId('log') : undefined,
+    trailId,
+    trailNameSnapshot: trailName,
     date: document.getElementById('logDate').value,
-    miles,
-    elevation,
+    miles: miles ? Number(miles) : null,
+    elevationFeet: elevation ? Number(elevation) : null,
     note: document.getElementById('logNote').value.trim(),
-    rating: selectedRating
+    rating: selectedRating,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    deletedAt: null
   });
-  store.set('hikeLog', hikeLog);
-  updatePrefs({ lastPlannedTrail: trail });
+  saveData();
+  updatePrefs({ lastPlannedTrail: trailName });
+  renderTrails();
   renderLog();
   closeModal();
-  toast(`"${trail}" logged!`, 'success');
+  toast(`"${trailName}" logged!`, 'success');
 });
 
 document.querySelectorAll('.rating-star').forEach(btn => {
@@ -846,6 +1210,7 @@ function renderCustomGear() {
       if (e.target.checked) { if (!checkedGear.includes(key)) checkedGear.push(key); li.classList.add('checked-label'); }
       else { checkedGear = checkedGear.filter(k => k !== key); li.classList.remove('checked-label'); }
       store.set('checkedGear', checkedGear);
+      syncGearData();
       updateProgress();
     });
     li.addEventListener('click', e => {
@@ -859,6 +1224,7 @@ function renderCustomGear() {
       checkedGear = checkedGear.filter(k => !k.startsWith('custom_'));
       store.set('customGear', customGear);
       store.set('checkedGear', checkedGear);
+      syncGearData();
       renderCustomGear();
       syncChecklistFromState();
       updateProgress();
@@ -867,6 +1233,7 @@ function renderCustomGear() {
         checkedGear = prevCheckedGear;
         store.set('customGear', customGear);
         store.set('checkedGear', checkedGear);
+        syncGearData();
         renderCustomGear();
         syncChecklistFromState();
         updateProgress();
@@ -885,6 +1252,7 @@ document.querySelectorAll('#checklist .check-item:not(.custom)').forEach((item, 
     if (cb.checked) { if (!checkedGear.includes(key)) checkedGear.push(key); item.classList.add('checked-label'); }
     else { checkedGear = checkedGear.filter(k => k !== key); item.classList.remove('checked-label'); }
     store.set('checkedGear', checkedGear);
+    syncGearData();
     updateProgress();
   });
   item.addEventListener('click', e => {
@@ -897,12 +1265,14 @@ document.getElementById('checkReset').addEventListener('click', () => {
   const prevCheckedGear = deepClone(checkedGear);
   checkedGear = [];
   store.set('checkedGear', checkedGear);
+  syncGearData();
   syncChecklistFromState();
   updateProgress();
   toast('Checklist reset');
   showUndoToast('Checklist reset', () => {
     checkedGear = prevCheckedGear;
     store.set('checkedGear', checkedGear);
+    syncGearData();
     syncChecklistFromState();
     updateProgress();
     toast('Checklist restored', 'success');
@@ -916,6 +1286,7 @@ function addGear() {
   if (!val) return;
   customGear.push(val);
   store.set('customGear', customGear);
+  syncGearData();
   document.getElementById('gearInput').value = '';
   renderCustomGear();
   updateProgress();
@@ -929,7 +1300,10 @@ updateProgress();
 ['condTerrain','condAccess'].forEach(id => {
   const el = document.getElementById(id);
   el.value = store.get(id, '');
-  el.addEventListener('input', () => store.set(id, el.value));
+  el.addEventListener('input', () => {
+    store.set(id, el.value);
+    syncFieldNotesData();
+  });
 });
 
 /* ── PHOTOS (IndexedDB via photoStore) ── */
@@ -938,6 +1312,7 @@ const PHOTO_KEYS = ['photo0','photo1','photo2'];
 function buildPhotoSlots() {
   const strip = document.getElementById('photoStrip');
   strip.innerHTML = '';
+  syncPhotoRecords();
 
   // Use photoStore if available, otherwise fall back to localStorage
   const PS = window.TK && window.TK.photoStore;

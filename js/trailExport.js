@@ -134,8 +134,10 @@
   /* ── Mode 2: Download backup as JSON ── */
 
   function downloadBackup() {
-    var trailList = readTrails();
-    var data = JSON.stringify(trailList, null, 2);
+    var backup = window.TK && window.TK.storage
+      ? window.TK.storage.exportData(typeof tkData !== 'undefined' ? tkData : undefined)
+      : readTrails();
+    var data = JSON.stringify(backup, null, 2);
     var blob = new Blob([data], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -147,6 +149,7 @@
   }
 
   function normalizeBackup(raw) {
+    if (window.TK && window.TK.storage) return window.TK.storage.importData(raw);
     var list = Array.isArray(raw) ? raw : raw && Array.isArray(raw.trails) ? raw.trails : null;
     if (!list) throw new Error('Backup must be a Trailkeeper JSON array.');
     return list.map(function (trail) {
@@ -179,6 +182,13 @@
     reader.onload = function () {
       try {
         var imported = normalizeBackup(JSON.parse(String(reader.result || '')));
+        if (window.TK && window.TK.storage) {
+          if (typeof refreshFromData === 'function') refreshFromData();
+          if (typeof renderTrails === 'function') renderTrails();
+          if (typeof renderLog === 'function') renderLog();
+          if (typeof toast === 'function') toast('Backup imported', 'success');
+          return;
+        }
         applyImportedTrails(imported);
         if (typeof toast === 'function') toast('Backup imported: ' + imported.length + ' trails', 'success');
       } catch (e) {

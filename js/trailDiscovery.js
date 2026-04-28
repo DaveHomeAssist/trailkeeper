@@ -160,9 +160,10 @@
       return;
     }
 
-    trails.push({
+    var trailRecord = {
       name: result.name,
       category: 'Nearby',
+      tags: ['Nearby'],
       status: 'planned',
       addedAt: Date.now(),
       osm_id: result.osm_id,
@@ -173,9 +174,19 @@
         lon: result.lon,
         distance_km: result.distance_km
       }
-    });
+    };
 
-    store.set('tk-trails', trails);
+    if (window.TK && window.TK.storage && typeof tkData !== 'undefined') {
+      window.TK.storage.upsertTrailByName(tkData, result.name, trailRecord);
+      if (typeof trails !== 'undefined') {
+        trails.length = 0;
+        window.TK.storage.active(tkData.trails).forEach(function (trail) { trails.push(trail); });
+      }
+      if (typeof saveData === 'function') saveData();
+    } else {
+      trails.push(trailRecord);
+      store.set('tk-trails', trails);
+    }
     if (typeof renderTrails === 'function') renderTrails();
     if (typeof toast === 'function') toast('\u201c' + result.name + '\u201d added', 'success');
 

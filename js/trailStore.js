@@ -9,6 +9,10 @@ window.TK = window.TK || {};
   /* ── Helpers ── */
 
   function read() {
+    if (window.TK && window.TK.storage) {
+      var doc = window.TK.storage.load();
+      return window.TK.storage.active(doc.trails);
+    }
     try {
       var raw = localStorage.getItem(KEY);
       if (raw === null) return [];
@@ -21,6 +25,18 @@ window.TK = window.TK || {};
 
   function write(trails) {
     try {
+      if (window.TK && window.TK.storage) {
+        var doc = window.TK.storage.load();
+        var deleted = (doc.trails || []).filter(function (trail) {
+          return trail && trail.deletedAt && !trails.some(function (active) { return active.id === trail.id; });
+        });
+        doc.trails = trails.concat(deleted);
+        doc = window.TK.storage.save(doc);
+        if (typeof tkData !== 'undefined') {
+          tkData = doc;
+        }
+        return;
+      }
       localStorage.setItem(KEY, JSON.stringify(trails));
       if (window.TK && window.TK.runtimeState) window.TK.runtimeState.storageError = '';
       window.dispatchEvent(new Event('trailkeeper:saved'));

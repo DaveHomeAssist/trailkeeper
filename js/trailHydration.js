@@ -172,7 +172,14 @@ window.TK.trailHydration = {
     UI.showToast('Trail data cleared');
     if (typeof showUndoToast === 'function') {
       showUndoToast('Trail data cleared', function () {
-        if (typeof store !== 'undefined') {
+        if (window.TK && window.TK.storage && typeof tkData !== 'undefined') {
+          tkData.trails = prevTrails;
+          if (typeof saveData === 'function') saveData();
+          trails.length = 0;
+          for (var p = 0; p < prevTrails.length; p++) trails.push(prevTrails[p]);
+          renderTrails();
+          UI.showToast('Trail data restored', 'success');
+        } else if (typeof store !== 'undefined') {
           store.set('tk-trails', prevTrails);
           trails.length = 0;
           for (var j = 0; j < prevTrails.length; j++) trails.push(prevTrails[j]);

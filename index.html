@@ -34,8 +34,9 @@
     <h2 class="modal-title" id="modalTitle">Log a Hike</h2>
     <div class="modal-row">
       <div class="modal-field">
-        <label class="modal-label" for="logTrail">Trail name *</label>
-        <input class="modal-input" id="logTrail" type="text" placeholder="e.g. Appalachian Gap">
+        <label class="modal-label" for="logTrailSelect">Trail *</label>
+        <select class="modal-input" id="logTrailSelect"></select>
+        <input class="modal-input modal-new-trail" id="logTrailNew" type="text" placeholder="Create a trail name">
       </div>
       <div class="modal-field">
         <label class="modal-label" for="logDate">Date</label>
@@ -86,6 +87,7 @@
   <nav class="section-nav scroll-fade" id="sectionNav" aria-label="Section navigation">
     <a href="#sec-today">Today</a>
     <a href="#sec-trails">Trails</a>
+    <a href="#sec-library">Library</a>
     <a href="#sec-record">Record</a>
     <a href="#sec-notes">Field Notes</a>
     <a href="#sec-gear">Gear</a>
@@ -163,6 +165,17 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- TRAIL LIBRARY -->
+  <section class="section" id="sec-library">
+    <div class="section-label">Library</div>
+    <div class="section-header">
+      <h2 class="section-title">Trail Library</h2>
+      <button class="btn btn-ghost" id="clearTrailDetail" type="button">Close detail</button>
+    </div>
+    <div class="trail-library-grid" id="trailLibrary" aria-live="polite"></div>
+    <div class="trail-detail" id="trailDetail" hidden></div>
   </section>
 
   <!-- TRAIL SHORT LIST -->
@@ -291,6 +304,7 @@
 <a class="back-to-top" id="backToTop" href="#top" aria-label="Back to top">Top</a>
 
 <script src="js/photoStore.js"></script>
+<script src="js/storageAdapter.js"></script>
 <script src="js/app.js"></script>
 <script src="js/trailAdapter.js"></script>
 <script src="js/trailStore.js"></script>
