@@ -41,12 +41,13 @@
   /* ── Parse + rank results ── */
 
   function normalizeNearbyResults(elements, originLat, originLon) {
+    if (!Array.isArray(elements)) return [];
     var seen = {};
     var results = [];
 
     for (var i = 0; i < elements.length; i++) {
       var el = elements[i];
-      if (!el.tags || !el.tags.name) continue;
+      if (!el || !el.tags || !el.tags.name) continue;
 
       var nameKey = el.tags.name.toLowerCase().trim();
       if (seen[nameKey]) continue;
@@ -75,10 +76,10 @@
   /* ── Check if trail already in shortlist ── */
 
   function isAlreadyAdded(name) {
-    if (typeof trails === 'undefined') return false;
+    if (typeof name !== 'string' || typeof trails === 'undefined' || !Array.isArray(trails)) return false;
     var lower = name.toLowerCase().trim();
     for (var i = 0; i < trails.length; i++) {
-      if (trails[i].name && trails[i].name.toLowerCase().trim() === lower) return true;
+      if (trails[i] && trails[i].name && trails[i].name.toLowerCase().trim() === lower) return true;
     }
     return false;
   }
@@ -86,6 +87,7 @@
   /* ── Render discovery state (loading/empty/error) ── */
 
   function renderDiscoveryState(list, type, message) {
+    if (!list) return;
     list.innerHTML = '<div class="trail-discovery-' + type + '">' +
       (typeof esc === 'function' ? esc(message) : message) + '</div>';
   }
@@ -151,7 +153,7 @@
   /* ── Add trail to shortlist ── */
 
   function addNearbyTrail(result, btnEl) {
-    if (typeof trails === 'undefined' || typeof store === 'undefined') return;
+    if (!result || typeof result.name !== 'string' || typeof trails === 'undefined' || !Array.isArray(trails) || typeof store === 'undefined') return;
 
     if (isAlreadyAdded(result.name)) {
       if (typeof toast === 'function') toast('Trail already in shortlist');
@@ -186,6 +188,9 @@
   /* ── Fetch nearby trails from Overpass ── */
 
   async function fetchNearbyTrails(lat, lon) {
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon))) {
+      return { error: 'invalid-location', message: 'Trail search needs a valid weather location first.' };
+    }
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, TIMEOUT_MS);
 
@@ -197,12 +202,15 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         signal: controller.signal
       });
-      if (!resp.ok) return null;
+      if (!resp.ok) return { error: 'http', message: 'Trail service returned HTTP ' + resp.status + '. Retry later.' };
       var data = await resp.json();
       if (!data || !Array.isArray(data.elements) || !data.elements.length) return [];
       return normalizeNearbyResults(data.elements, lat, lon);
-    } catch (_) {
-      return null;
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        return { error: 'timeout', message: 'Trail search timed out after 12 seconds. Try again with a steadier connection.' };
+      }
+      return { error: 'network', message: 'Trail search could not reach Overpass. Check your connection and retry.' };
     } finally {
       clearTimeout(timer);
     }
@@ -237,12 +245,12 @@
 
     if (btn) { btn.textContent = 'Find nearby trails'; btn.disabled = false; }
 
-    if (results === null) {
+    if (results && results.error) {
       if (window.TK && window.TK.runtimeState) {
-        window.TK.runtimeState.overpassError = 'Nearby trail search is unavailable right now. Check weather again or retry later.';
+        window.TK.runtimeState.overpassError = results.message;
       }
       if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
-      renderDiscoveryState(list, 'error', 'Could not reach trail data. Check your connection.');
+      renderDiscoveryState(list, 'error', results.message);
     } else {
       if (window.TK && window.TK.runtimeState) {
         window.TK.runtimeState.overpassError = '';

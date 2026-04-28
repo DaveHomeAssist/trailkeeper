@@ -69,7 +69,14 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
       window.dispatchEvent(new Event('trailkeeper:saved'));
-    } catch (_) {}
+      if (window.TK && window.TK.runtimeState) window.TK.runtimeState.storageError = '';
+    } catch (_) {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.storageError = 'Trail log was not saved. Browser storage may be full.';
+      }
+      window.dispatchEvent(new Event('trailkeeper:storage-error'));
+      if (typeof toast === 'function') toast('Trail log was not saved. Storage may be full.', 'error');
+    }
   }
 
   function getLogsForTrail(trailName) {
@@ -123,25 +130,26 @@
       rating: 0,
       note: ''
     };
+    var formId = 'trail-log-' + index + '-' + Date.now();
 
     // Date field
     var dateField = document.createElement('div');
     dateField.className = 'trail-log-field';
     dateField.innerHTML =
-      '<label class="trail-log-label">Date</label>' +
-      '<input type="date" class="trail-log-date" value="' + esc(log.hikedAt || todayISO()) + '">';
+      '<label class="trail-log-label" for="' + formId + '-date">Date</label>' +
+      '<input type="date" class="trail-log-date" id="' + formId + '-date" value="' + esc(log.hikedAt || todayISO()) + '">';
     form.appendChild(dateField);
 
     // Conditions
     var condField = document.createElement('div');
     condField.className = 'trail-log-field';
-    condField.innerHTML = '<label class="trail-log-label">Conditions</label>';
+    condField.innerHTML = '<div class="trail-log-label">Conditions</div>';
     var condRow = document.createElement('div');
     condRow.className = 'trail-log-conditions';
     CONDITIONS.forEach(function (c) {
       var pill = document.createElement('button');
       pill.type = 'button';
-      pill.className = 'trail-log-condition' + (log.conditions === c.key ? ' active' : '');
+      pill.className = 'trail-log-condition' + (log.conditions === c.key ? ' is-active' : '');
       pill.setAttribute('data-condition', c.key);
       pill.setAttribute('aria-label', c.label);
       pill.textContent = c.icon + ' ' + c.label;
@@ -159,7 +167,7 @@
     // Rating
     var ratingField = document.createElement('div');
     ratingField.className = 'trail-log-field';
-    ratingField.innerHTML = '<label class="trail-log-label">Rating</label>';
+    ratingField.innerHTML = '<div class="trail-log-label">Rating</div>';
     var ratingRow = document.createElement('div');
     ratingRow.className = 'trail-log-rating';
     var currentRating = log.rating || 0;
@@ -186,9 +194,10 @@
     // Note
     var noteField = document.createElement('div');
     noteField.className = 'trail-log-field';
-    noteField.innerHTML = '<label class="trail-log-label">Note</label>';
+    noteField.innerHTML = '<label class="trail-log-label" for="' + formId + '-note">Note</label>';
     var textarea = document.createElement('textarea');
     textarea.className = 'trail-log-note';
+    textarea.id = formId + '-note';
     textarea.placeholder = 'How was the hike?';
     textarea.rows = 2;
     textarea.value = log.note || '';
@@ -215,7 +224,7 @@
 
     // Wire save
     saveBtn.addEventListener('click', function () {
-      var activeCond = condRow.querySelector('.trail-log-condition.active');
+      var activeCond = condRow.querySelector('.trail-log-condition.is-active');
       var entry = {
         id: log.id || null,
         trailName: trail.name,
@@ -264,6 +273,9 @@
       var latest = logs[logs.length - 1];
       var summary = document.createElement('div');
       summary.className = 'trail-log-summary';
+      summary.setAttribute('role', 'button');
+      summary.setAttribute('tabindex', '0');
+      summary.setAttribute('aria-label', 'Edit hike log for ' + trail.name);
 
       var parts = [];
       if (latest.hikedAt) parts.push(formatDateShort(latest.hikedAt));
@@ -278,13 +290,13 @@
 
       summary.addEventListener('click', function (e) {
         e.stopPropagation();
-        // Toggle form for editing
-        var existingForm = trailItemEl.querySelector('.trail-log-form');
-        if (existingForm) {
-          existingForm.remove();
-        } else {
-          renderLogForm(trailItemEl, trail, index, latest);
-        }
+        toggleLogForm(trailItemEl, trail, index, latest);
+      });
+
+      summary.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        toggleLogForm(trailItemEl, trail, index, latest);
       });
 
       trailItemEl.appendChild(summary);
@@ -304,6 +316,15 @@
         }
       });
       trailItemEl.appendChild(prompt);
+    }
+  }
+
+  function toggleLogForm(trailItemEl, trail, index, existingLog) {
+    var existingForm = trailItemEl.querySelector('.trail-log-form');
+    if (existingForm) {
+      existingForm.remove();
+    } else {
+      renderLogForm(trailItemEl, trail, index, existingLog);
     }
   }
 
@@ -337,22 +358,13 @@
 
       // Use a short delay to let the inline handler run first
       setTimeout(function () {
-        if (typeof trails === 'undefined') return;
-        // The index may have shifted after re-render, scan by checking
-        // all trail items for ones that just became done
-        var items = document.querySelectorAll('#trailList .trail-item');
-        items.forEach(function (item, i) {
-          if (i >= trails.length) return;
-          var t = trails[i];
-          if (t.status === 'done') {
-            var logs = getLogsForTrail(t.name);
-            var hasForm = item.querySelector('.trail-log-form');
-            // Only auto-show form if trail just became done and has no logs
-            if (logs.length === 0 && !hasForm && btn.classList.contains('done')) {
-              renderLogForm(item, t, i);
-            }
-          }
-        });
+        if (typeof trails === 'undefined' || idx < 0 || idx >= trails.length) return;
+        var t = trails[idx];
+        var item = document.querySelectorAll('#trailList .trail-item')[idx];
+        if (!t || !item || t.status !== 'done') return;
+        var logs = getLogsForTrail(t.name);
+        var hasForm = item.querySelector('.trail-log-form');
+        if (logs.length === 0 && !hasForm) renderLogForm(item, t, idx);
       }, 50);
     }, true); // capture phase to fire before the inline handler
   }

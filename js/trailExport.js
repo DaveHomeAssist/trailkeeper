@@ -51,6 +51,7 @@
   /* ── Format trail line ── */
 
   function formatTrailLine(trail, num) {
+    if (!trail || typeof trail.name !== 'string') return '';
     var line = num + '. ' + trail.name;
     var details = [];
 
@@ -145,14 +146,68 @@
     if (typeof toast === 'function') toast('Backup downloaded', 'success');
   }
 
+  function normalizeBackup(raw) {
+    var list = Array.isArray(raw) ? raw : raw && Array.isArray(raw.trails) ? raw.trails : null;
+    if (!list) throw new Error('Backup must be a Trailkeeper JSON array.');
+    return list.map(function (trail) {
+      var name = trail && typeof trail.name === 'string' ? trail.name.trim() : '';
+      if (!name) return null;
+      var status = ['unvisited', 'planned', 'done'].indexOf(trail.status) >= 0 ? trail.status : 'unvisited';
+      var category = typeof trail.category === 'string' && trail.category.trim() ? trail.category.trim() : 'Quick';
+      return Object.assign({}, trail, { name: name, category: category, status: status });
+    }).filter(Boolean);
+  }
+
+  function applyImportedTrails(imported) {
+    if (typeof store !== 'undefined' && store.set) {
+      store.set('tk-trails', imported);
+    } else {
+      localStorage.setItem('tk-trails', JSON.stringify(imported));
+      window.dispatchEvent(new Event('trailkeeper:saved'));
+    }
+    try { localStorage.removeItem('trails'); } catch (_) {}
+    if (typeof trails !== 'undefined' && Array.isArray(trails)) {
+      trails.splice(0, trails.length);
+      imported.forEach(function (trail) { trails.push(trail); });
+    }
+    if (typeof renderTrails === 'function') renderTrails();
+  }
+
+  function importBackupFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var imported = normalizeBackup(JSON.parse(String(reader.result || '')));
+        applyImportedTrails(imported);
+        if (typeof toast === 'function') toast('Backup imported: ' + imported.length + ' trails', 'success');
+      } catch (e) {
+        if (typeof toast === 'function') toast(e && e.message ? e.message : 'Could not import backup', 'error');
+      }
+    };
+    reader.onerror = function () {
+      if (typeof toast === 'function') toast('Could not read backup file', 'error');
+    };
+    reader.readAsText(file);
+  }
+
   /* ── Init: bind click handlers ── */
 
   function initExport() {
     var copyBtn = document.getElementById('copyPlanBtn');
     var downloadBtn = document.getElementById('downloadBackupBtn');
+    var importBtn = document.getElementById('importBackupBtn');
+    var importInput = document.getElementById('importBackupFile');
 
     if (copyBtn) copyBtn.addEventListener('click', copyPlanToClipboard);
     if (downloadBtn) downloadBtn.addEventListener('click', downloadBackup);
+    if (importBtn && importInput) {
+      importBtn.addEventListener('click', function () { importInput.click(); });
+      importInput.addEventListener('change', function () {
+        importBackupFile(importInput.files && importInput.files[0]);
+        importInput.value = '';
+      });
+    }
   }
 
   /* ── Expose on namespace ── */
@@ -160,7 +215,8 @@
   window.TK.trailExport = {
     initExport: initExport,
     copyPlanToClipboard: copyPlanToClipboard,
-    downloadBackup: downloadBackup
+    downloadBackup: downloadBackup,
+    importBackupFile: importBackupFile
   };
 
 })();

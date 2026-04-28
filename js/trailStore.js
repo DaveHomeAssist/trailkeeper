@@ -22,7 +22,15 @@ window.TK = window.TK || {};
   function write(trails) {
     try {
       localStorage.setItem(KEY, JSON.stringify(trails));
-    } catch (_) { /* quota or private-mode — silently fail */ }
+      if (window.TK && window.TK.runtimeState) window.TK.runtimeState.storageError = '';
+      window.dispatchEvent(new Event('trailkeeper:saved'));
+    } catch (_) {
+      if (window.TK && window.TK.runtimeState) {
+        window.TK.runtimeState.storageError = 'Trail list was not saved. Browser storage may be full.';
+      }
+      window.dispatchEvent(new Event('trailkeeper:storage-error'));
+      if (typeof toast === 'function') toast('Trail list was not saved. Storage may be full.', 'error');
+    }
   }
 
   function clone(obj) {

@@ -21,6 +21,9 @@ const PREF_DEFAULTS = {
   lastWeatherVerdict: '',
   lastViewedPhotoCount: 0
 };
+const STATUSES = ['unvisited', 'planned', 'done'];
+const SLABELS = { unvisited: 'Unvisited', planned: 'Planned', done: 'Done \u2713' };
+const TRAIL_CATEGORIES = ['Quick', 'Half day', 'Full day', 'Nearby'];
 
 /* ── STORAGE ── */
 const store = {
@@ -120,6 +123,57 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeTrailList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(function (trail) {
+    if (!trail || typeof trail !== 'object') return null;
+    var name = typeof trail.name === 'string' ? trail.name.trim() : '';
+    if (!name) return null;
+    var category = typeof trail.category === 'string' && trail.category.trim()
+      ? trail.category.trim()
+      : 'Quick';
+    var status = STATUSES.includes(trail.status) ? trail.status : 'unvisited';
+    return Object.assign({}, trail, { name: name, category: category, status: status });
+  }).filter(Boolean);
+}
+
+function normalizeHikeLog(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(function (entry) {
+    if (!entry || typeof entry !== 'object') return null;
+    var trail = typeof entry.trail === 'string' ? entry.trail.trim() : '';
+    if (!trail) return null;
+    var rating = Number.isFinite(Number(entry.rating))
+      ? Math.min(5, Math.max(0, Math.round(Number(entry.rating))))
+      : 0;
+    var milesNumber = entry.miles === '' || entry.miles == null ? NaN : Number(entry.miles);
+    var elevationNumber = entry.elevation === '' || entry.elevation == null ? NaN : Number(entry.elevation);
+    var miles = Number.isFinite(milesNumber) && milesNumber >= 0 ? String(entry.miles) : '';
+    var elevation = Number.isFinite(elevationNumber) && elevationNumber >= 0 ? String(entry.elevation) : '';
+    return Object.assign({}, entry, {
+      trail: trail,
+      date: typeof entry.date === 'string' ? entry.date : '',
+      miles: miles,
+      elevation: elevation,
+      note: typeof entry.note === 'string' ? entry.note : '',
+      rating: rating
+    });
+  }).filter(Boolean);
+}
+
+function normalizeStringList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(function (item) {
+    return typeof item === 'string' ? item.trim() : '';
+  }).filter(Boolean);
+}
+
+let trails = normalizeTrailList(store.get('tk-trails', []));
+let hikeLog = normalizeHikeLog(store.get('hikeLog', []));
+let customGear = normalizeStringList(store.get('customGear', []));
+let checkedGear = normalizeStringList(store.get('checkedGear', []));
+let selectedRating = 0;
+
 function setupTwoClickConfirm(button, onConfirm, confirmText = 'Sure?') {
   let armed = false;
   let resetTimer = null;
@@ -155,7 +209,9 @@ function toast(msg, type = '') {
   text.className = 'toast-msg';
   text.textContent = msg;
   el.appendChild(text);
-  document.getElementById('toastContainer').appendChild(el);
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  container.appendChild(el);
   setTimeout(() => el.remove(), 2600);
 }
 
@@ -181,7 +237,9 @@ function showUndoToast(msg, onUndo, timeoutMs = 5000) {
     try { onUndo(); } finally { el.remove(); }
   });
   el.append(text, btn);
-  document.getElementById('toastContainer').appendChild(el);
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  container.appendChild(el);
   setTimeout(remove, timeoutMs);
 }
 
@@ -263,13 +321,17 @@ function ensureGlobalState(message) {
 
 function renderAdaptiveStates() {
   var prefs = getPrefs();
-  var plannedTrails = trails.filter(function (trail) { return trail && trail.status === 'planned'; });
+  var trailState = Array.isArray(trails) ? trails : [];
+  var logState = Array.isArray(hikeLog) ? hikeLog : [];
+  var plannedTrails = trailState.filter(function (trail) { return trail && trail.status === 'planned'; });
   var gearDone = document.querySelectorAll('#checklist .check-item input:checked').length;
   var gearAll = document.querySelectorAll('#checklist .check-item input').length;
-  var latestLog = hikeLog.length ? hikeLog[hikeLog.length - 1] : null;
+  var latestLog = logState.length ? logState[logState.length - 1] : null;
   var today = new Date().toISOString().split('T')[0];
   var hasPhoto = (window.TK.runtimeState.photoCount || 0) > 0;
   var weatherVerdict = readWeatherVerdict() || prefs.lastWeatherVerdict;
+  var plannedTrailEl = document.getElementById('planTrail');
+  var plannedTrailText = plannedTrailEl ? (plannedTrailEl.textContent || '').trim() : '';
 
   ensureGlobalState(window.TK.runtimeState.storageError);
 
@@ -279,7 +341,7 @@ function renderAdaptiveStates() {
     ensureSectionState('sec-today', 'empty', 'Weather not checked yet', 'Add a city or zip code to unlock trail conditions and nearby trail suggestions.');
   } else if (weatherVerdict === 'no-go' || weatherVerdict === 'caution') {
     ensureSectionState('sec-today', 'active', 'Weather alert active', weatherVerdict === 'no-go' ? 'Conditions suggest postponing or choosing a safer route.' : 'Use caution and review wind, precipitation, and footing before heading out.');
-  } else if ((document.getElementById('planTrail').textContent || '').trim()) {
+  } else if (plannedTrailText) {
     ensureSectionState('sec-today', 'complete', 'Today is set', 'Trail, timing, and weather context are in place for this outing.');
   } else {
     ensureSectionState('sec-today', '', '', '');
@@ -287,21 +349,21 @@ function renderAdaptiveStates() {
 
   if (window.TK.runtimeState.overpassError) {
     ensureSectionState('sec-trails', 'error', 'Trail data unavailable', window.TK.runtimeState.overpassError);
-  } else if (!trails.length) {
+  } else if (!trailState.length) {
     ensureSectionState('sec-trails', 'empty', 'Start a shortlist', 'Add a trail manually or use weather plus nearby trail discovery to seed the list.');
   } else if (plannedTrails.length > 0) {
     ensureSectionState('sec-trails', 'active', 'Trails ready to hike', plannedTrails.length + ' planned trail' + (plannedTrails.length === 1 ? ' is' : 's are') + ' waiting in your shortlist.');
   } else {
-    ensureSectionState('sec-trails', 'complete', 'Trail list established', trails.length + ' trail' + (trails.length === 1 ? '' : 's') + ' saved and ready to review.');
+    ensureSectionState('sec-trails', 'complete', 'Trail list established', trailState.length + ' trail' + (trailState.length === 1 ? '' : 's') + ' saved and ready to review.');
   }
 
-  if (!hikeLog.length) {
+  if (!logState.length) {
     ensureSectionState('sec-record', 'empty', 'No hikes logged yet', 'Use the log button after your next outing to build trail history automatically.');
   } else if (window.TK.runtimeState.hikeModalOpen) {
     ensureSectionState('sec-record', 'active', 'Logging in progress', 'Finish the current hike entry to update stats and the trail summary.');
   } else if (latestLog && latestLog.date === today) {
     ensureSectionState('sec-record', 'complete', 'Today’s hike is logged', 'Latest entry: ' + latestLog.trail + '. Add photos or refine the note while details are fresh.');
-  } else if ((document.getElementById('planTrail').textContent || '').trim()) {
+  } else if (plannedTrailText) {
     ensureSectionState('sec-record', 'active', 'Ready to log', 'Today’s trail is selected. Log the hike when you return to capture miles, elevation, and notes.');
   } else {
     ensureSectionState('sec-record', '', '', '');
@@ -402,7 +464,15 @@ weatherCity.addEventListener('keydown', e => e.key === 'Enter' && fetchWeather()
 
 async function fetchWeather() {
   const city = weatherCity.value.trim();
-  if (!city) return;
+  if (!city) {
+    weatherResult.innerHTML = '<span class="weather-danger">Enter a city or zip code before checking weather.</span>';
+    weatherResult.classList.add('is-visible');
+    window.TK.runtimeState.weatherStatus = 'error';
+    window.TK.runtimeState.weatherMessage = 'Enter a city or zip code before checking weather.';
+    renderAdaptiveStates();
+    weatherCity.focus();
+    return;
+  }
   store.set('weatherCity', city);
   updatePrefs({ lastWeatherCity: city });
   weatherBtn.textContent = '...';
@@ -412,16 +482,25 @@ async function fetchWeather() {
   window.TK.runtimeState.weatherMessage = 'Checking forecast…';
   renderAdaptiveStates();
   try {
-    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`).then(r => r.json());
-    if (!geo.results?.length) throw new Error('not found');
+    const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+    if (!geoResp.ok) throw new Error('geo-http');
+    const geo = await geoResp.json();
+    if (!geo.results?.length) throw new Error('not-found');
     const { latitude, longitude, name, country_code } = geo.results[0];
     window.TK = window.TK || {}; window.TK.weatherContext = { zip: city, lat: latitude, lon: longitude, placeLabel: name || city };
-    const wx = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=1`).then(r => r.json());
+    const wxResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto&forecast_days=1`);
+    if (!wxResp.ok) throw new Error('forecast-http');
+    const wx = await wxResp.json();
     const d = wx.daily;
+    if (!d || !Array.isArray(d.temperature_2m_max) || !Array.isArray(d.temperature_2m_min) ||
+        !Array.isArray(d.precipitation_probability_max) || !Array.isArray(d.windspeed_10m_max)) {
+      throw new Error('forecast-shape');
+    }
     const high = Math.round(d.temperature_2m_max[0]);
     const low = Math.round(d.temperature_2m_min[0]);
     const precip = d.precipitation_probability_max[0];
     const wind = Math.round(d.windspeed_10m_max[0]);
+    if (![high, low, precip, wind].every(Number.isFinite)) throw new Error('forecast-shape');
     let verdict, cls, icon;
     if (precip >= 70 || wind >= 35) { verdict = 'No-go'; cls = 'weather-no'; icon = '[X]'; }
     else if (precip >= 40 || wind >= 20) { verdict = 'Caution'; cls = 'weather-warn'; icon = '[!]'; }
@@ -431,11 +510,18 @@ async function fetchWeather() {
     window.TK.runtimeState.weatherStatus = verdict.toLowerCase() === 'go' ? 'ready' : 'alert';
     window.TK.runtimeState.weatherMessage = verdict;
     updatePrefs({ lastWeatherVerdict: verdict.toLowerCase() });
-  } catch {
-    weatherResult.innerHTML = `<span class="weather-danger">${esc('Location not found - try a different city name.')}</span>`;
+  } catch (err) {
+    const reason = err && err.message === 'not-found'
+      ? 'Location not found. Try a different city or zip code.'
+      : err && err.message === 'forecast-http'
+        ? 'Weather forecast service returned an error. Try again later.'
+        : err && err.message === 'forecast-shape'
+          ? 'Weather forecast data was incomplete. Try again later.'
+          : 'Weather service is unreachable. Check your connection and try again.';
+    weatherResult.innerHTML = `<span class="weather-danger">${esc(reason)}</span>`;
     weatherResult.classList.add('is-visible');
     window.TK.runtimeState.weatherStatus = 'error';
-    window.TK.runtimeState.weatherMessage = 'Location not found. Try another city or zip code.';
+    window.TK.runtimeState.weatherMessage = reason;
   } finally {
     weatherBtn.textContent = 'Check';
     weatherBtn.disabled = false;
@@ -445,12 +531,10 @@ async function fetchWeather() {
 }
 
 /* ── TRAIL SHORTLIST ── */
-let trails = store.get('tk-trails', []);
-const STATUSES = ['unvisited','planned','done'];
-const SLABELS  = { unvisited:'Unvisited', planned:'Planned', done:'Done \u2713' };
-
 function renderTrails() {
   const list = document.getElementById('trailList');
+  if (!list) return;
+  trails = normalizeTrailList(trails);
   list.innerHTML = '';
   if (!trails.length) {
     const empty = document.createElement('li');
@@ -464,15 +548,15 @@ function renderTrails() {
   let statusUpdated = false;
   trails.forEach((t, i) => {
     const safeStatus = STATUSES.includes(t.status) ? t.status : 'unvisited';
-    if (safeStatus !== t.status) {
-      trails[i].status = safeStatus;
-      statusUpdated = true;
-    }
+    const safeCategory = TRAIL_CATEGORIES.includes(t.category) ? t.category : t.category || 'Quick';
+    if (safeStatus !== t.status || safeCategory !== t.category) statusUpdated = true;
+    trails[i].status = safeStatus;
+    trails[i].category = safeCategory;
     const safeStatusLabel = esc(SLABELS[safeStatus]);
     const li = document.createElement('li');
     li.className = 'trail-item';
     li.innerHTML = `
-      <span class="trail-tag">${esc(t.category)}</span>
+      <span class="trail-tag">${esc(safeCategory)}</span>
       <span class="trail-name${safeStatus==='done'?' done':''}">${esc(t.name)}</span>
       <button class="trail-set-today btn" aria-label="Set as today's trail">\u2192 Today</button>
       <button class="trail-status ${safeStatus}" aria-label="Status: ${safeStatusLabel}">${safeStatusLabel}</button>
@@ -486,9 +570,20 @@ function renderTrails() {
       toast(`"${t.name}" set as today's trail`, 'success');
     });
     li.querySelector('.trail-status').addEventListener('click', () => {
-      trails[i].status = STATUSES[(STATUSES.indexOf(safeStatus) + 1) % STATUSES.length];
+      const statusTrailName = t.name;
+      const previousStatus = trails[i].status;
+      const nextStatus = STATUSES[(STATUSES.indexOf(safeStatus) + 1) % STATUSES.length];
+      trails[i].status = nextStatus;
       store.set('tk-trails', trails);
       renderTrails();
+      showUndoToast(`Status changed to ${SLABELS[nextStatus]}`, () => {
+        const targetIndex = trails.findIndex((trail) => trail && trail.name === statusTrailName);
+        if (targetIndex < 0) return;
+        trails[targetIndex].status = previousStatus;
+        store.set('tk-trails', trails);
+        renderTrails();
+        toast('Status restored', 'success');
+      });
     });
     li.querySelector('.trail-delete').addEventListener('click', () => {
       const prevTrails = deepClone(trails);
@@ -515,6 +610,13 @@ document.getElementById('trailInput').addEventListener('keydown', e => e.key==='
 function addTrail() {
   const name = document.getElementById('trailInput').value.trim();
   if (!name) return;
+  const duplicate = trails.some(function (trail) {
+    return trail && trail.name && trail.name.toLowerCase().trim() === name.toLowerCase();
+  });
+  if (duplicate) {
+    toast('Trail already in shortlist');
+    return;
+  }
   trails.push({ name, category: document.getElementById('trailCategory').value, status: 'unvisited' });
   store.set('tk-trails', trails);
   document.getElementById('trailInput').value = '';
@@ -525,11 +627,10 @@ function addTrail() {
 renderTrails();
 
 /* ── HIKE LOG ── */
-let hikeLog = store.get('hikeLog', []);
-let selectedRating = 0;
-
 function renderLog() {
   const entries = document.getElementById('logEntries');
+  if (!entries) return;
+  hikeLog = normalizeHikeLog(hikeLog);
   entries.innerHTML = '';
   if (!hikeLog.length) {
     const empty = document.createElement('li');
@@ -680,11 +781,15 @@ document.addEventListener('keydown', e => {
 document.getElementById('logSave').addEventListener('click', () => {
   const trail = document.getElementById('logTrail').value.trim();
   if (!trail) { document.getElementById('logTrail').focus(); return; }
+  const miles = document.getElementById('logMiles').value;
+  const elevation = document.getElementById('logElevation').value;
+  if (miles && Number(miles) < 0) { document.getElementById('logMiles').focus(); return; }
+  if (elevation && Number(elevation) < 0) { document.getElementById('logElevation').focus(); return; }
   hikeLog.push({
     trail,
     date: document.getElementById('logDate').value,
-    miles: document.getElementById('logMiles').value,
-    elevation: document.getElementById('logElevation').value,
+    miles,
+    elevation,
     note: document.getElementById('logNote').value.trim(),
     rating: selectedRating
   });
@@ -705,9 +810,6 @@ document.querySelectorAll('.rating-star').forEach(btn => {
 renderLog();
 
 /* ── GEAR CHECKLIST ── */
-let customGear  = store.get('customGear', []);
-let checkedGear = store.get('checkedGear', []);
-
 function updateProgress() {
   const all  = document.querySelectorAll('#checklist .check-item input').length;
   const done = document.querySelectorAll('#checklist .check-item input:checked').length;
@@ -1002,16 +1104,28 @@ document.querySelectorAll('.copy-btn[data-copy-from]').forEach(btn => {
     if (!src) return;
     const text = (src.textContent || src.value || '').trim();
     if (!text) { toast('Nothing to copy'); return; }
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      toast('Clipboard unavailable in this browser', 'error');
+      return;
+    }
     navigator.clipboard.writeText(text).then(() => {
       flashCopied(btn);
       toast('Copied to clipboard', 'success');
+    }).catch(() => {
+      toast('Could not copy to clipboard', 'error');
     });
   });
 });
 
 function copyText(text, btn) {
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    toast('Clipboard unavailable in this browser', 'error');
+    return;
+  }
   navigator.clipboard.writeText(text).then(() => {
     if (btn) flashCopied(btn);
     toast('Copied to clipboard', 'success');
+  }).catch(() => {
+    toast('Could not copy to clipboard', 'error');
   });
 }

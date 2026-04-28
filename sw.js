@@ -1,4 +1,4 @@
-var CACHE_NAME = 'tk-v4';
+var CACHE_NAME = 'tk-v5';
 var APP_SHELL = [
   './',
   'index.html',
@@ -76,10 +76,16 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
-  // Cache-first for app shell and local assets
+  // Network-first for app shell and local assets so online users see fresh files.
   e.respondWith(
     caches.match(e.request).then(function(cached) {
-      return cached || fetch(e.request);
+      return fetch(e.request).then(function(resp) {
+        var clone = resp.clone();
+        caches.open(CACHE_NAME).then(function(c) { c.put(e.request, clone); });
+        return resp;
+      }).catch(function() {
+        return cached || fetch(e.request);
+      });
     })
   );
 });

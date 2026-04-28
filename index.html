@@ -10,6 +10,7 @@
 <link rel="icon" href="assets/icons/favicon/favicon.png" type="image/png" sizes="2048x2048">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0e0c">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Trailkeeper">
@@ -149,6 +150,8 @@
       <div class="trail-export">
         <button id="copyPlanBtn" type="button" class="trail-export-btn">Copy plan</button>
         <button id="downloadBackupBtn" type="button" class="trail-export-btn trail-export-secondary">Download backup</button>
+        <button id="importBackupBtn" type="button" class="trail-export-btn trail-export-secondary">Import backup</button>
+        <input id="importBackupFile" type="file" accept="application/json,.json" class="trail-import-input" aria-label="Import Trailkeeper backup">
       </div>
       <div class="section-divider">
         <button class="trip-notes-toggle" id="notesToggle" aria-expanded="false" aria-controls="notesBody" type="button">
@@ -306,6 +309,11 @@ if (window.TK && window.TK.trailLog) window.TK.trailLog.initLog();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function(err) {
     console.warn('Trailkeeper service worker registration failed.', err);
+    if (window.TK && window.TK.runtimeState) {
+      window.TK.runtimeState.storageError = 'Offline support did not start. The app still works online, but refresh before relying on it in the field.';
+    }
+    if (typeof renderAdaptiveStates === 'function') renderAdaptiveStates();
+    if (typeof toast === 'function') toast('Offline support did not start', 'error');
   });
 }
 </script>
