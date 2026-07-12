@@ -1,4 +1,17 @@
-var CACHE_NAME = 'tk-v5';
+/* Build stamp - bump this date whenever app shell files change.
+   The SW activate handler will purge any older cache automatically. */
+var BUILD_STAMP = '2026-06-11';
+var CACHE_NAME = 'tk-' + BUILD_STAMP;
+
+/* Notify all active clients of SW errors. */
+function notifyClients(type, message) {
+  self.clients.matchAll({ type: 'window' }).then(function(clients) {
+    clients.forEach(function(client) {
+      client.postMessage({ type: type, message: message });
+    });
+  });
+}
+
 var APP_SHELL = [
   './',
   'index.html',
@@ -27,6 +40,9 @@ self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(APP_SHELL);
+    }).catch(function(err) {
+      console.error('Trailkeeper SW install failed - cache could not be populated.', err);
+      notifyClients('sw-error', 'Offline support failed to initialize. Some features may not work without a connection.');
     })
   );
   self.skipWaiting();

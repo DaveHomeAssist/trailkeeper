@@ -393,6 +393,15 @@ function showUndoToast(msg, onUndo, timeoutMs = 5000) {
   setTimeout(remove, timeoutMs);
 }
 
+/* ── SERVICE WORKER ERROR LISTENER ── */
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'sw-error') {
+      toast(e.data.message || 'Offline support encountered an error.', 'error');
+    }
+  });
+}
+
 /* ── AUTOSAVE META ── */
 const saveMeta = document.getElementById('saveMeta');
 let saveMetaInterval = null;
