@@ -4,6 +4,10 @@
 
 Inherits root rules from `/Users/daverobertson/Desktop/Code/AGENTS.md`.
 
+## Workspace contract
+
+Read `~/Code/ops-hub/90-governance/WORKSPACE_OPERATING_RULES.md` before project rules, including COMMS (one entry on the shared Agent Communications Page per session).
+
 ## Project Overview
 
 Trailkeeper is a local first hiking log and field dashboard. It supports planning, shortlist management, hike logging, notes, saved links, and nearby trail discovery in a static browser app.
