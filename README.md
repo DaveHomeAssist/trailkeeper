@@ -114,3 +114,13 @@ Then visit `http://localhost:8000`.
 ### Deployment
 
 Hosted on GitHub Pages from the repo root. Push to `main` and it's live.
+
+## Offline update checks
+
+Both entry pages use the same field log and trail library controls. Once the shell is cached, the storage adapter and header mark load offline. New versions keep the previous working shell if installation fails and preserve caches belonging to other apps on the same origin.
+
+Run the regression checks with Node’s built-in test runner.
+
+```sh
+node --test tests/offline.test.cjs
+```
