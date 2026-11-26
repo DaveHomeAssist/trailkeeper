@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Local-first backcountry hiking dashboard to plan trails, log hikes, and track your outdoor adventures.">
 <title>Trailkeeper</title>
 <meta name="application-name" content="Trailkeeper">
 <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg">
@@ -16,7 +17,13 @@
 <link rel="apple-touch-icon" href="assets/icons/favicon/apple-touch-icon.png">
 <meta property="og:title" content="Trailkeeper — Backcountry Field Log">
 <meta property="og:description" content="Local-first hiking dashboard. Plan, log, track.">
-<meta property="og:image" content="https://davehomeassist.github.io/trailkeeper/images/tk2.png">
+<meta property="og:image" content="https://davehomeassist.github.io/trailkeeper/images/trailkeeper-share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Trailkeeper above mist rising between forested ridgelines.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://davehomeassist.github.io/trailkeeper/images/trailkeeper-share.jpg">
+<meta name="twitter:image:alt" content="Trailkeeper above mist rising between forested ridgelines.">
 <meta property="og:type" content="website">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -33,8 +40,9 @@
     <h2 class="modal-title" id="modalTitle">Log a Hike</h2>
     <div class="modal-row">
       <div class="modal-field">
-        <label class="modal-label" for="logTrail">Trail name *</label>
-        <input class="modal-input" id="logTrail" type="text" placeholder="e.g. Appalachian Gap">
+        <label class="modal-label" for="logTrailSelect">Trail *</label>
+        <select class="modal-input" id="logTrailSelect"></select>
+        <input class="modal-input modal-new-trail" id="logTrailNew" type="text" placeholder="Create a trail name">
       </div>
       <div class="modal-field">
         <label class="modal-label" for="logDate">Date</label>
@@ -78,13 +86,14 @@
 
   <!-- HEADER -->
   <header class="page-header">
-    <img class="page-icon" src="images/trailkeeper-logo-light.png" alt="" aria-hidden="true" width="48" height="48">
+    <img class="page-icon" src="images/trailkeeper-header.webp" alt="" aria-hidden="true" width="48" height="48">
     <h1 class="page-title">Trail<span>keeper</span></h1>
   </header>
 
   <nav class="section-nav scroll-fade" id="sectionNav" aria-label="Section navigation">
     <a href="#sec-today">Today</a>
     <a href="#sec-trails">Trails</a>
+    <a href="#sec-library">Library</a>
     <a href="#sec-record">Record</a>
     <a href="#sec-notes">Field Notes</a>
     <a href="#sec-gear">Gear</a>
@@ -162,6 +171,17 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- TRAIL LIBRARY -->
+  <section class="section" id="sec-library">
+    <div class="section-label">Library</div>
+    <div class="section-header">
+      <h2 class="section-title">Trail Library</h2>
+      <button class="btn btn-ghost" id="clearTrailDetail" type="button">Close detail</button>
+    </div>
+    <div class="trail-library-grid" id="trailLibrary" aria-live="polite"></div>
+    <div class="trail-detail" id="trailDetail" hidden></div>
   </section>
 
   <!-- TRAIL SHORT LIST -->
@@ -290,6 +310,7 @@
 <a class="back-to-top" id="backToTop" href="#top" aria-label="Back to top">Top</a>
 
 <script src="js/photoStore.js"></script>
+<script src="js/storageAdapter.js"></script>
 <script src="js/app.js"></script>
 <script src="js/trailAdapter.js"></script>
 <script src="js/trailStore.js"></script>
